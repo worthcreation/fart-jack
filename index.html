@@ -13,9 +13,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    box-sizing: border-box;
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
     --tile: #dff3ea;
     --grout: #b7d9c9;
     --ink: #2b2140;
@@ -55,18 +52,18 @@
     touch-action: none;
     -webkit-user-select: none; user-select: none;
   }
-  #wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   canvas {
-    display: block;
-    border-radius: 18px;
-    box-shadow: 0 18px 0 rgba(0,0,0,.18), 0 0 0 6px var(--paper);
+    position: absolute; inset: 0;
+    display: block; width: 100%; height: 100%;
     cursor: pointer;
   }
-  #hud {
-    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); display: flex; gap: 8px; z-index: 2;
+  #hud, #hudLeft {
+    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); display: flex; gap: 8px; z-index: 2;
   }
+  #hud { right: calc(14px + env(safe-area-inset-right, 0px)); }
+  #hudLeft { left: calc(14px + env(safe-area-inset-left, 0px)); }
   @media (max-width: 520px), (max-height: 700px) {
-    canvas { border-radius: 0; box-shadow: none; }
     .btn { padding: 8px 12px; font-size: 14px; }
   }
   .btn {
@@ -105,6 +102,9 @@
 <body>
 <div id="wrap">
   <canvas id="game" width="420" height="640" aria-label="Fart Jack game canvas"></canvas>
+  <div id="hudLeft">
+    <button class="btn" id="fsBtn">Full screen</button>
+  </div>
   <div id="hud">
     <button class="btn" id="muteBtn" aria-pressed="false">Sound on</button>
   </div>
@@ -125,17 +125,23 @@
 
 <script>
 (() => {
-  const W = 420, H = 640;
+  // Logical arena is at least 420x640 and stretches in one direction to fill the screen exactly
+  const BASE_W = 420, BASE_H = 640;
+  let W = BASE_W, H = BASE_H, SAFE_TOP = 0;
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none';
+  document.body.appendChild(probe);
   function fit() {
     const wrap = document.getElementById('wrap');
-    const vw = wrap.clientWidth, vh = wrap.clientHeight;
-    const scale = Math.min(vw / W, vh / H);
+    const vw = wrap.clientWidth || innerWidth, vh = wrap.clientHeight || innerHeight;
+    const scale = Math.min(vw / BASE_W, vh / BASE_H);
+    W = vw / scale; H = vh / scale;
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    cv.style.width = Math.floor(W * scale) + 'px'; cv.style.height = Math.floor(H * scale) + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+    SAFE_TOP = (parseFloat(getComputedStyle(probe).paddingTop) || 0) / scale;
   }
   fit();
   addEventListener('resize', fit);
@@ -147,6 +153,27 @@
   const bestLine = document.getElementById('bestLine');
   const muteBtn = document.getElementById('muteBtn');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const coarse = matchMedia('(pointer: coarse)').matches;
+
+  /* ---------- Fullscreen ---------- */
+  const fsBtn = document.getElementById('fsBtn');
+  const rootEl = document.documentElement;
+  const canFS = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  const isFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function enterFS() {
+    try {
+      const req = rootEl.requestFullscreen || rootEl.webkitRequestFullscreen;
+      const pr = req.call(rootEl, { navigationUI: 'hide' });
+      if (pr && pr.then) pr.then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(() => {}); }).catch(() => {});
+    } catch (e) {}
+  }
+  function exitFS() { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
+  if (!canFS) fsBtn.classList.add('hidden');
+  fsBtn.addEventListener('click', () => { isFS() ? exitFS() : enterFS(); });
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
+    fsBtn.textContent = isFS() ? 'Exit' : 'Full screen';
+    fit(); setTimeout(fit, 150);
+  }));
 
   /* ---------- Audio (all procedural, no files) ---------- */
   const Audio = {
@@ -317,10 +344,10 @@
     if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
   }
 
-  function spawnPipe() {
+  function spawnPipe(x) {
     const margin = 90;
     const gapY = margin + Math.random() * (H - 110 - margin * 2 - G.gap);
-    G.pipes.push({ x: W + 40, gapY, gap: G.gap, type: TYPES[Math.floor(Math.random() * TYPES.length)], passed: false, w: 66 });
+    G.pipes.push({ x, gapY, gap: G.gap, type: TYPES[Math.floor(Math.random() * TYPES.length)], passed: false, w: 66 });
   }
 
   function spawnRelic() {
@@ -362,6 +389,9 @@
     Audio.init();
     reset();
     G.state = 'play';
+    if (canFS && coarse && !isFS()) enterFS();
+    // On wide screens, place the pipes that would already be in view (first one matches the 420-wide timing)
+    for (let x = 460 + G.spawnEvery * G.speed; x < W + 40; x += G.spawnEvery * G.speed) spawnPipe(x);
     startPanel.classList.add('hidden'); overPanel.classList.add('hidden');
     Audio.startMusic();
     flap();
@@ -397,7 +427,10 @@
     if (j.x > 110) j.x -= (j.x - 110) * 0.04; if (j.x < 110) j.x = 110;
     j.rot = Math.max(-0.5, Math.min(1.2, j.vy * 0.08));
     G.frame++;
-    if (G.frame % G.spawnEvery === 0) spawnPipe();
+    const spacing = G.spawnEvery * G.speed;
+    const lastP = G.pipes[G.pipes.length - 1];
+    if (lastP) { if (lastP.x + spacing <= W + 40) spawnPipe(lastP.x + spacing); }
+    else if (G.frame % G.spawnEvery === 0) spawnPipe(W + 40);
     if (--G.nextRelic <= 0) spawnRelic();
     if (G.power > 0) G.power = Math.max(0, G.power - 2.2);
     G.relics.forEach(r => { r.x -= G.speed * 0.75; r.phase += 0.06; r.y += r.vy + Math.sin(r.phase) * 0.9; if (r.y < 40) r.vy = Math.abs(r.vy); if (r.y > H - 150) r.vy = -Math.abs(r.vy); });
@@ -603,7 +636,7 @@
 
   function drawPowerBar() {
     if (G.power <= 0 || G.state === 'start') return;
-    const w = 180, x = (W - w) / 2, y = 96;
+    const w = 180, x = (W - w) / 2, y = 96 + SAFE_TOP;
     ctx.fillStyle = 'rgba(43,33,64,.55)'; rr(x - 3, y - 3, w + 6, 16, 8); ctx.fill();
     ctx.fillStyle = '#b6e35a'; rr(x, y, w * (G.power / G.powerMax), 10, 5); ctx.fill();
     ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
@@ -620,8 +653,8 @@
   function drawScore() {
     if (G.state === 'start') return;
     ctx.font = '400 56px "Luckiest Guy", Impact, sans-serif'; ctx.textAlign = 'center';
-    ctx.lineWidth = 8; ctx.strokeStyle = '#7a4b2a'; ctx.strokeText(G.score, W / 2, 78);
-    ctx.fillStyle = '#fff'; ctx.fillText(G.score, W / 2, 78);
+    ctx.lineWidth = 8; ctx.strokeStyle = '#7a4b2a'; ctx.strokeText(G.score, W / 2, 78 + SAFE_TOP);
+    ctx.fillStyle = '#fff'; ctx.fillText(G.score, W / 2, 78 + SAFE_TOP);
   }
 
   function draw() {
