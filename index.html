@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#dff3ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fart Jack">
 <title>Fart Jack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
@@ -35,7 +40,9 @@
   }
   html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
   body {
-    margin: 0; height: 100%;
+    margin: 0; height: 100%; min-height: 100dvh;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none; position: fixed; inset: 0;
     background-color: var(--tile);
     background-image:
       linear-gradient(var(--grout) 2px, transparent 2px),
@@ -45,22 +52,25 @@
     font-family: "Nunito", "Trebuchet MS", sans-serif;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
-    touch-action: manipulation;
+    touch-action: none;
     -webkit-user-select: none; user-select: none;
   }
-  #wrap { position: relative; width: min(100vw, 100% ); height: 100%; display: flex; align-items: center; justify-content: center; }
+  #wrap { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
   canvas {
     display: block;
-    max-width: 100%; max-height: 100%;
     border-radius: 18px;
     box-shadow: 0 18px 0 rgba(0,0,0,.18), 0 0 0 6px var(--paper);
     cursor: pointer;
   }
   #hud {
-    position: absolute; top: 14px; right: 14px; display: flex; gap: 8px;
+    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); display: flex; gap: 8px; z-index: 2;
+  }
+  @media (max-width: 520px), (max-height: 700px) {
+    canvas { border-radius: 0; box-shadow: none; }
+    .btn { padding: 8px 12px; font-size: 14px; }
   }
   .btn {
-    font: 800 15px "Nunito", sans-serif;
+    font: 800 15px "Nunito", sans-serif; touch-action: manipulation; min-height: 44px;
     background: var(--btn); color: var(--btn-ink);
     border: 0; border-radius: 999px; padding: 9px 14px;
     box-shadow: 0 4px 0 #c99a1a; cursor: pointer;
@@ -75,18 +85,18 @@
     pointer-events: auto;
     background: var(--panel); color: var(--ink);
     border-radius: 24px; padding: 28px 32px; text-align: center;
-    max-width: 320px; width: calc(100% - 48px);
+    max-width: 320px; width: min(calc(100% - 48px), 86vw); padding: clamp(18px, 5vw, 28px) clamp(20px, 6vw, 32px);
     box-shadow: 0 10px 0 rgba(0,0,0,.15);
     transform: rotate(-1.5deg);
   }
   .panel h1 {
-    font: 400 64px/0.9 "Luckiest Guy", "Impact", sans-serif;
+    font: 400 clamp(48px, 16vw, 64px)/0.9 "Luckiest Guy", "Impact", sans-serif;
     margin: 0 0 6px; letter-spacing: 1px;
     color: var(--poop);
     text-shadow: 4px 4px 0 var(--gas);
   }
   .panel h2 { font: 400 40px/1 "Luckiest Guy", "Impact", sans-serif; margin: 0 0 10px; color: var(--poop); text-shadow: 3px 3px 0 var(--gas); }
-  .panel p { margin: 8px 0 18px; font-size: 16px; line-height: 1.4; }
+  .panel p { margin: 8px 0 18px; font-size: clamp(14px, 3.8vw, 16px); line-height: 1.4; }
   .panel .big { font: 400 48px/1 "Luckiest Guy", "Impact", sans-serif; color: var(--pink); margin: 4px 0; }
   .hidden { display: none; }
   @media (prefers-reduced-motion: reduce) { .panel { transform: none; } }
@@ -118,6 +128,19 @@
   const W = 420, H = 640;
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
+  function fit() {
+    const wrap = document.getElementById('wrap');
+    const vw = wrap.clientWidth, vh = wrap.clientHeight;
+    const scale = Math.min(vw / W, vh / H);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    cv.style.width = Math.floor(W * scale) + 'px'; cv.style.height = Math.floor(H * scale) + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  fit();
+  addEventListener('resize', fit);
+  addEventListener('orientationchange', () => setTimeout(fit, 150));
+  if (window.visualViewport) visualViewport.addEventListener('resize', fit);
   const startPanel = document.getElementById('startPanel');
   const overPanel = document.getElementById('overPanel');
   const finalScore = document.getElementById('finalScore');
@@ -623,8 +646,19 @@
   function press(e) {
     if (e && e.target && e.target.closest && e.target.closest('.btn')) return;
     if (G.state === 'play') { flap(); }
+    else if (G.state === 'dead' && !overPanel.classList.contains('hidden')) start();
   }
-  cv.addEventListener('pointerdown', e => { e.preventDefault(); press(e); });
+  document.getElementById('wrap').addEventListener('pointerdown', e => {
+    if (e.target.closest('.btn')) return;
+    e.preventDefault();
+    if (Audio.ctx && Audio.ctx.state === 'suspended') Audio.ctx.resume();
+    press(e);
+  }, { passive: false });
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && Audio.ctx) Audio.ctx.suspend();
+    else if (Audio.ctx) Audio.ctx.resume();
+  });
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' || e.code === 'ArrowUp') {
       e.preventDefault();
