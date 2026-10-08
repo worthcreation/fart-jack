@@ -55,14 +55,12 @@
   #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
   canvas {
     position: absolute; inset: 0;
-    display: block; width: 100%; height: 100%;
+    display: block;
     cursor: pointer;
   }
-  #hud, #hudLeft {
-    position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); display: flex; gap: 8px; z-index: 2;
-  }
-  #hud { right: calc(14px + env(safe-area-inset-right, 0px)); }
-  #hudLeft { left: calc(14px + env(safe-area-inset-left, 0px)); }
+  canvas.classic { position: relative; inset: auto; border-radius: 18px; box-shadow: 0 14px 0 rgba(0,0,0,.18), 0 0 0 6px var(--paper); }
+  #hud { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: calc(14px + env(safe-area-inset-right, 0px)); z-index: 3; }
+  body.menu-left #hud { right: auto; left: calc(14px + env(safe-area-inset-left, 0px)); }
   @media (max-width: 520px), (max-height: 700px) {
     .btn { padding: 8px 12px; font-size: 14px; }
   }
@@ -73,7 +71,25 @@
     box-shadow: 0 4px 0 #c99a1a; cursor: pointer;
   }
   .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #c99a1a; }
-  .btn.toggle[aria-pressed="false"] { opacity: .6; text-decoration: line-through; text-decoration-thickness: 2px; }
+  .panel.menu {
+    transform: none; max-width: 360px; max-height: calc(100% - 40px); overflow-y: auto; text-align: left;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+  }
+  .menu h2 { text-align: center; }
+  .menu h3 { font: 800 13px "Nunito", sans-serif; margin: 18px 0 8px; opacity: .7; }
+  body.menu-open #hud { display: none; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; font-size: 15px; }
+  .row b { font-weight: 800; }
+  .seg { display: flex; gap: 6px; }
+  .seg .btn, .row .btn { min-height: 38px; padding: 6px 12px; font-size: 14px; box-shadow: 0 3px 0 #c99a1a; }
+  .seg .btn[aria-pressed="false"] { background: transparent; box-shadow: inset 0 0 0 2px #c99a1a; }
+  .item { margin: 10px 0 4px; }
+  .item .top { display: flex; justify-content: space-between; font-weight: 800; }
+  .bar { height: 10px; border-radius: 6px; background: rgba(43,33,64,.15); overflow: hidden; margin: 5px 0 3px; }
+  .bar i { display: block; height: 100%; border-radius: 6px; }
+  .perk { font-size: 13px; line-height: 1.35; opacity: .85; }
+  .menu .actions { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .tries { font-size: 14px; opacity: .8; margin: -8px 0 14px; }
   .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   #overlay {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -103,24 +119,53 @@
 <body>
 <div id="wrap">
   <canvas id="game" width="420" height="640" aria-label="Fart Jack game canvas"></canvas>
-  <div id="hudLeft">
-    <button class="btn" id="fsBtn">Full screen</button>
-  </div>
   <div id="hud">
-    <button class="btn toggle" id="musicBtn" aria-pressed="true">Music</button>
-    <button class="btn toggle" id="soundBtn" aria-pressed="true">Sound</button>
+    <button class="btn" id="menuBtn" aria-haspopup="dialog" aria-controls="menuPanel">Menu</button>
   </div>
   <div id="overlay">
     <div class="panel" id="startPanel">
       <h1>Fart<br>Jack</h1>
-      <p>Jack ate the whole bean casserole. Tap, click or press space to let one rip and float past the toilet paper towers. Grab a floating bean or broccoli for a short burst of turbo gas: each flap rockets you forward and smashes through whatever you hit, but only mid-blast.</p>
+      <p>Jack ate the whole bean casserole. Tap, click or press space to let one rip and float past the toilet paper towers. Grab a bean or broccoli for turbo gas: each flap rockets you forward and smashes whatever you hit, but only mid-blast. Every one you eat levels it up for good.</p>
+      <p class="tries" id="startTries"></p>
       <button class="btn" id="startBtn">Let it rip</button>
     </div>
     <div class="panel hidden" id="overPanel">
       <h2>Gassed out</h2>
       <div class="big" id="finalScore">0</div>
       <p id="bestLine">Best: 0</p>
+      <p class="tries" id="overTries"></p>
       <button class="btn" id="againBtn">Try again</button>
+    </div>
+    <div class="panel menu hidden" id="menuPanel" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+      <h2 id="menuTitle">Menu</h2>
+      <h3>Your stats</h3>
+      <div class="row"><span>Total tries</span><b id="stTries">0</b></div>
+      <div class="row"><span>Best score</span><b id="stBest">0</b></div>
+      <div class="row"><span>Total points</span><b id="stPoints">0</b></div>
+      <div class="row"><span>Average per try</span><b id="stAvg">0</b></div>
+      <div class="row"><span>Things smashed</span><b id="stSmash">0</b></div>
+      <div class="item">
+        <div class="top"><span>Beans</span><span id="beanLv">Level 1</span></div>
+        <div class="bar"><i id="beanBar" style="background:#a0522d"></i></div>
+        <div class="perk" id="beanInfo"></div>
+      </div>
+      <div class="item">
+        <div class="top"><span>Broccoli</span><span id="brocLv">Level 1</span></div>
+        <div class="bar"><i id="brocBar" style="background:#3f8f3a"></i></div>
+        <div class="perk" id="brocInfo"></div>
+      </div>
+      <h3>Sound</h3>
+      <div class="row"><span>Music</span><div class="seg"><button class="btn" data-set="music" data-val="1">On</button><button class="btn" data-set="music" data-val="0">Off</button></div></div>
+      <div class="row"><span>Sound effects</span><div class="seg"><button class="btn" data-set="sfx" data-val="1">On</button><button class="btn" data-set="sfx" data-val="0">Off</button></div></div>
+      <h3>Layout</h3>
+      <div class="row"><span>Menu button</span><div class="seg"><button class="btn" data-set="side" data-val="left">Left</button><button class="btn" data-set="side" data-val="right">Right</button></div></div>
+      <div class="row"><span>Arena</span><div class="seg"><button class="btn" data-set="arena" data-val="fill">Fill screen</button><button class="btn" data-set="arena" data-val="classic">Classic</button></div></div>
+      <div class="row"><span>Screen shake</span><div class="seg"><button class="btn" data-set="shake" data-val="1">On</button><button class="btn" data-set="shake" data-val="0">Off</button></div></div>
+      <div class="row" id="fsRow"><span>Full screen</span><button class="btn" id="fsBtn">Go full screen</button></div>
+      <div class="actions">
+        <button class="btn" id="resetBtn">Reset stats</button>
+        <button class="btn" id="closeMenuBtn">Back to game</button>
+      </div>
     </div>
   </div>
 </div>
@@ -129,7 +174,13 @@
 (() => {
   // Logical arena is at least 420x640 and stretches in one direction to fill the screen exactly
   const BASE_W = 420, BASE_H = 640;
-  let W = BASE_W, H = BASE_H, SAFE_TOP = 0, HUD_BOTTOM = 0;
+  let W = BASE_W, H = BASE_H, SAFE_TOP = 0;
+  function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch (e) { return {}; } }
+  function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  const Settings = Object.assign({ side: 'right', arena: 'fill', shake: true }, loadJSON('fartjack_settings'));
+  const Stats = Object.assign({ tries: 0, points: 0, smashes: 0, beans: 0, broc: 0 }, loadJSON('fartjack_stats'));
+  const saveSettings = () => saveJSON('fartjack_settings', Settings);
+  const saveStats = () => saveJSON('fartjack_stats', Stats);
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
   const probe = document.createElement('div');
@@ -138,14 +189,16 @@
   function fit() {
     const wrap = document.getElementById('wrap');
     const vw = wrap.clientWidth || innerWidth, vh = wrap.clientHeight || innerHeight;
-    const scale = Math.min(vw / BASE_W, vh / BASE_H);
-    W = vw / scale; H = vh / scale;
+    const classic = Settings.arena === 'classic';
+    const scale = Math.min(vw / BASE_W, vh / BASE_H) * (classic ? 0.94 : 1);
+    if (classic) { W = BASE_W; H = BASE_H; } else { W = vw / scale; H = vh / scale; }
+    const cssW = W * scale, cssH = H * scale;
+    cv.classList.toggle('classic', classic);
+    cv.style.width = cssW + 'px'; cv.style.height = cssH + 'px';
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cv.width = Math.round(vw * dpr); cv.height = Math.round(vh * dpr);
+    cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
-    SAFE_TOP = (parseFloat(getComputedStyle(probe).paddingTop) || 0) / scale;
-    const hud = document.getElementById('hud');
-    HUD_BOTTOM = hud ? hud.getBoundingClientRect().bottom / scale : 0;
+    SAFE_TOP = classic ? 0 : (parseFloat(getComputedStyle(probe).paddingTop) || 0) / scale;
   }
   fit();
   addEventListener('load', fit);
@@ -156,8 +209,6 @@
   const overPanel = document.getElementById('overPanel');
   const finalScore = document.getElementById('finalScore');
   const bestLine = document.getElementById('bestLine');
-  const musicBtn = document.getElementById('musicBtn');
-  const soundBtn = document.getElementById('soundBtn');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarse = matchMedia('(pointer: coarse)').matches;
 
@@ -174,10 +225,10 @@
     } catch (e) {}
   }
   function exitFS() { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
-  if (!canFS) fsBtn.classList.add('hidden');
+  if (!canFS) document.getElementById('fsRow').classList.add('hidden');
   fsBtn.addEventListener('click', () => { isFS() ? exitFS() : enterFS(); });
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
-    fsBtn.textContent = isFS() ? 'Exit' : 'Full screen';
+    fsBtn.textContent = isFS() ? 'Exit full screen' : 'Go full screen';
     fit(); setTimeout(fit, 150);
   }));
 
@@ -666,6 +717,19 @@
         t += d * 0.92;
       });
     },
+    levelUp() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      [0, 4, 7, 12, 16].forEach((s, i) => this.pluck(s + 12, t + i * 0.06, 0.12, this.sfx, 0.3));
+      this.bell(28, t + 0.3, 0.08, this.sfx);
+    },
+    shieldPop() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      this.noiseHit(t, 0.15, 'bandpass', 2500, 1.5, 0.35, this.sfx);
+      this.pluck(19, t, 0.12, this.sfx, 0.25); this.pluck(24, t + 0.05, 0.1, this.sfx, 0.25);
+      this.duck(0.5, 0.2);
+    },
     // new best score fanfare
     jingle() {
       if (!this.ctx) return;
@@ -686,24 +750,54 @@
     pipes: [], clouds: [], parts: [],
     speed: 2.6, gap: 165, spawnEvery: 95, frame: 0,
     score: 0, best: 0, shake: 0, t: 0,
-    relics: [], debris: [], power: 0, powerMax: 420, nextRelic: 300
+    relics: [], debris: [], power: 0, powerMax: 420, nextRelic: 300,
+    powerType: 'bean', shield: 0, ghost: 0, toasts: [], paused: false, countdown: 0
   };
   try { G.best = parseInt(localStorage.getItem('fartjack_best') || '0', 10) || 0; } catch (e) { G.best = 0; }
 
   const TYPES = ['tp', 'beans', 'plunger', 'tp'];
 
+  /* ---------- Bean and broccoli levels: every one eaten counts forever ---------- */
+  const LEVELS = [0, 3, 8, 15, 25, 40, 60, 85, 115, 150]; // eaten needed for levels 1 to 10
+  function levelOf(n) { let L = 1; for (let i = 1; i < LEVELS.length; i++) if (n >= LEVELS[i]) L = i + 1; return L; }
+  // Beans: turbo gets longer and stronger, smashes pay more and refill gas
+  function beanPerks(L) {
+    return { dur: 1 + 0.08 * (L - 1), boost: 5.5 + 0.3 * (L - 1), smashPts: L >= 9 ? 3 : L >= 3 ? 2 : 1, refund: L >= 6 };
+  }
+  // Broccoli: lighter, floatier gas, then a shield bubble, then a magnet for snacks
+  function brocPerks(L) {
+    return { dur: 1 + 0.06 * (L - 1), float: L >= 2 ? 1 - 0.035 * (L - 1) : 1, shield: L >= 10 ? 2 : L >= 4 ? 1 : 0, magnet: L >= 7 ? 90 + 15 * (L - 7) : 0 };
+  }
+  function beanText(L) {
+    const p = beanPerks(L), parts = ['Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec with a ' + Math.round((p.boost / 5.5 - 1) * 100) + '% stronger push.'];
+    parts.push(p.smashPts > 1 ? 'Smashes are worth ' + p.smashPts + ' points.' : 'Level 3: smashes worth 2 points.');
+    parts.push(p.refund ? 'Each smash refills a little gas.' : 'Level 6: smashes refill gas.');
+    if (L < 9) parts.push('Level 9: smashes worth 3.');
+    return parts.join(' ');
+  }
+  function brocText(L) {
+    const p = brocPerks(L), parts = ['Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec.'];
+    parts.push(p.float < 1 ? 'You fall ' + Math.round((1 - p.float) * 100) + '% slower while powered.' : 'Level 2: floaty gas.');
+    parts.push(p.shield ? 'Each one gives a shield that blocks ' + p.shield + (p.shield > 1 ? ' crashes.' : ' crash.') : 'Level 4: shield bubble.');
+    parts.push(p.magnet ? 'Snacks drift toward you.' : 'Level 7: snack magnet.');
+    return parts.join(' ');
+  }
+
   function reset() {
     G.jack = { x: 110, y: H / 2, vy: 0, vx: 0, r: 22, rot: 0, strain: 0, fx: 0, fxMax: 1, fxInt: 0, relief: 0, reliefInt: 0, happy: 0, happyKind: 'grin', scared: 0, blink: 0, blinkT: 120 };
-    G.pipes = []; G.parts = []; G.relics = []; G.debris = []; G.power = 0; G.nextRelic = 300; G.score = 0; G.frame = 0; G.speed = 2.6; G.gap = 165; G.shake = 0;
+    G.pipes = []; G.parts = []; G.relics = []; G.debris = []; G.power = 0; G.powerType = 'bean'; G.shield = 0; G.ghost = 0; G.toasts = []; G.countdown = 0; G.nextRelic = 300; G.score = 0; G.frame = 0; G.speed = 2.6; G.gap = 165; G.shake = 0;
     for (let i = 0; i < 6; i++) G.clouds.push({ x: Math.random() * W, y: 40 + Math.random() * 300, s: 0.6 + Math.random() * 0.8, v: 0.15 + Math.random() * 0.2 });
     G.clouds = G.clouds.slice(-6);
   }
 
   // Single place where points are awarded, so passing and smashing both count toward the speed-up
-  function addPoint() {
-    G.score++;
-    if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+  function addPoint(n) {
+    for (let i = 0; i < (n || 1); i++) {
+      G.score++;
+      if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+    }
   }
+  function toast(text, color) { G.toasts.push({ text, color: color || '#fff', life: 100 }); }
 
   function spawnPipe(x) {
     const margin = 90;
@@ -729,7 +823,28 @@
     G.shake = Math.max(G.shake, reduceMotion ? 0 : 8);
     Audio.crunch();
     G.jack.happy = 30; G.jack.happyKind = 'fierce';
-    if (!p.passed) { p.passed = true; addPoint(); }
+    if (G.state === 'play') Stats.smashes++;
+    const bean = G.power > 0 && G.powerType === 'bean' ? beanPerks(levelOf(Stats.beans)) : null;
+    if (bean && bean.refund) G.power = Math.min(G.powerMax, G.power + 35);
+    if (!p.passed) { p.passed = true; addPoint(bean ? bean.smashPts : 1); }
+  }
+
+  function eat(r) {
+    const bean = r.type === 'bean', key = bean ? 'beans' : 'broc';
+    const before = levelOf(Stats[key]);
+    Stats[key]++; saveStats();
+    const L = levelOf(Stats[key]);
+    G.powerType = bean ? 'bean' : 'broc';
+    G.powerMax = 420 * (bean ? beanPerks(L).dur : brocPerks(L).dur);
+    G.power = G.powerMax;
+    const sh = bean ? 0 : brocPerks(L).shield;
+    if (sh > G.shield) { G.shield = sh; toast('Shield up!', '#bdf3ff'); }
+    if (L > before) { toast((bean ? 'Beans' : 'Broccoli') + ' level ' + L + '!', bean ? '#ffd9a8' : '#c9f7a8'); Audio.levelUp(); }
+  }
+  function popShield() {
+    G.shield--; G.ghost = 45; G.shake = Math.max(G.shake, 6);
+    Audio.shieldPop(); toast(G.shield > 0 ? 'Shield saved you! One left' : 'Shield saved you!', '#bdf3ff');
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; G.parts.push({ x: G.jack.x + Math.cos(a) * 34, y: G.jack.y + Math.sin(a) * 34, vx: Math.cos(a) * 2, vy: Math.sin(a) * 2, r: 4, life: 0.8 }); }
   }
 
   function flap() {
@@ -741,7 +856,7 @@
     const jj = G.jack;
     jj.fx = jj.fxMax = Math.max(10, Math.round(info.dur * 60));
     jj.fxInt = info.int; jj.relief = 0;
-    if (powered) { G.jack.vx = 5.5; G.jack.strain = 22; }
+    if (powered) { G.jack.vx = G.powerType === 'bean' ? beanPerks(levelOf(Stats.beans)).boost : 5.5; G.jack.strain = 22; }
     const n = (reduceMotion ? 4 : 10) * (powered ? 3 : 1);
     for (let i = 0; i < n; i++) {
       const k = powered ? 2.2 : 1;
@@ -755,6 +870,7 @@
     Audio.init();
     reset();
     G.state = 'play';
+    Stats.tries++; saveStats(); updateTries();
     if (canFS && coarse && !isFS()) enterFS();
     // On wide screens, place the pipes that would already be in view (first one matches the 420-wide timing)
     for (let x = 460 + G.spawnEvery * G.speed; x < W + 40; x += G.spawnEvery * G.speed) spawnPipe(x);
@@ -770,6 +886,7 @@
     Audio.stopMusic(); Audio.setTension(false); Audio.splat();
     const newBest = G.score > G.best && G.score > 0;
     if (G.score > G.best) { G.best = G.score; try { localStorage.setItem('fartjack_best', String(G.best)); } catch (e) {} }
+    Stats.points += G.score; saveStats();
     finalScore.textContent = G.score;
     bestLine.textContent = newBest ? 'New best!' : 'Best: ' + G.best;
     clearTimeout(G.musicT1); clearTimeout(G.musicT2);
@@ -780,7 +897,10 @@
 
   /* ---------- Update ---------- */
   function update() {
+    if (G.paused) return;
+    if (G.countdown > 0) { G.countdown--; if (G.countdown === 0 && Audio.ctx) Audio.ctx.resume(); return; }
     G.t++;
+    G.toasts.forEach(t => t.life--); G.toasts = G.toasts.filter(t => t.life > 0);
     G.clouds.forEach(c => { c.x -= c.v; if (c.x < -120) c.x = W + 120; });
     G.parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += 0.25; p.life -= 0.025; });
     G.parts = G.parts.filter(p => p.life > 0);
@@ -794,7 +914,9 @@
       return;
     }
     const j = G.jack;
-    j.vy += G.gravity; j.y += j.vy;
+    const floaty = G.power > 0 && G.powerType === 'broc' ? brocPerks(levelOf(Stats.broc)).float : 1;
+    j.vy += G.gravity * floaty; j.y += j.vy;
+    if (G.ghost > 0) G.ghost--;
     j.x += j.vx; j.vx *= 0.88;
     if (j.x > 110) j.x -= (j.x - 110) * 0.04; if (j.x < 110) j.x = 110;
     j.rot = Math.max(-0.5, Math.min(1.2, j.vy * 0.08));
@@ -805,9 +927,11 @@
     else if (G.frame % G.spawnEvery === 0) spawnPipe(W + 40);
     if (--G.nextRelic <= 0) spawnRelic();
     if (G.power > 0) G.power = Math.max(0, G.power - 2.2);
+    const magnet = brocPerks(levelOf(Stats.broc)).magnet;
+    if (magnet) G.relics.forEach(r => { const dx = j.x - r.x, dy = j.y - r.y, d = Math.hypot(dx, dy); if (d < magnet && d > 1) { r.x += dx / d * 3; r.y += dy / d * 3; } });
     G.relics.forEach(r => { r.x -= G.speed * 0.75; r.phase += 0.06; r.y += r.vy + Math.sin(r.phase) * 0.9; if (r.y < 40) r.vy = Math.abs(r.vy); if (r.y > H - 150) r.vy = -Math.abs(r.vy); });
     G.relics = G.relics.filter(r => {
-      if (Math.hypot(r.x - j.x, r.y - j.y) < r.r + j.r - 4) { G.power = G.powerMax; Audio.powerup(); j.happy = 55; j.happyKind = 'star';
+      if (Math.hypot(r.x - j.x, r.y - j.y) < r.r + j.r - 4) { eat(r); Audio.powerup(); j.happy = 55; j.happyKind = 'star';
         for (let i = 0; i < 14; i++) G.parts.push({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, r: 4 + Math.random() * 6, life: 1 });
         return false; }
       return r.x > -40;
@@ -821,7 +945,10 @@
       }
       const hitX = j.x + j.r - 4 > p.x && j.x - j.r + 4 < p.x + p.w;
       if (hitX && (j.y - j.r + 4 < p.gapY || j.y + j.r - 4 > p.gapY + p.gap)) {
-        if (G.power > 0 && j.strain > 0) { breakPipe(p); p.dead = true; } else { die(); return; }
+        if (G.power > 0 && j.strain > 0) { breakPipe(p); p.dead = true; }
+        else if (G.ghost > 0) { /* just saved by the shield */ }
+        else if (G.shield > 0) { popShield(); breakPipe(p); p.dead = true; j.vy = G.flapV * 0.6; }
+        else { die(); return; }
       }
     }
     G.pipes = G.pipes.filter(p => !p.dead);
@@ -829,7 +956,10 @@
     let inCol = false;
     for (const p of G.pipes) if (j.x + j.r > p.x && j.x - j.r < p.x + p.w) inCol = true;
     Audio.setTension(inCol);
-    if (j.y + j.r > H - 110) { j.y = H - 110 - j.r; die(); }
+    if (j.y + j.r > H - 110) {
+      j.y = H - 110 - j.r;
+      if (G.shield > 0 && G.ghost <= 0) { popShield(); j.vy = G.flapV; } else if (G.ghost <= 0) die();
+    }
     if (j.y - j.r < 0) { j.y = j.r; j.vy = 0; }
   }
 
@@ -1116,18 +1246,46 @@
     let fade = flapping ? 0.55 : 0.14;
     if (G.power < 90 && Math.floor(G.power / 8) % 2 === 0) fade *= 0.4;
     const pulse = 8 + Math.sin(G.t * 0.3) * 4;
-    ctx.fillStyle = `rgba(182,227,90,${fade})`; ctx.beginPath(); ctx.arc(j.x, j.y, j.r + 14 + pulse, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = `rgba(120,200,40,${flapping ? 0.95 : 0.3})`; ctx.lineWidth = flapping ? 5 : 2; ctx.setLineDash([8, 6]); ctx.lineDashOffset = -G.t * 2;
+    const broc = G.powerType === 'broc';
+    ctx.fillStyle = broc ? `rgba(120,215,150,${fade})` : `rgba(182,227,90,${fade})`; ctx.beginPath(); ctx.arc(j.x, j.y, j.r + 14 + pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = broc ? `rgba(50,150,80,${flapping ? 0.95 : 0.3})` : `rgba(120,200,40,${flapping ? 0.95 : 0.3})`; ctx.lineWidth = flapping ? 5 : 2; ctx.setLineDash([8, 6]); ctx.lineDashOffset = -G.t * 2;
     ctx.beginPath(); ctx.arc(j.x, j.y, j.r + 10 + pulse, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  function drawShield(j) {
+    if (G.shield <= 0 && G.ghost <= 0) return;
+    if (G.ghost > 0 && Math.floor(G.ghost / 4) % 2 === 0) return;
+    const rad = j.r + 22 + Math.sin(G.t * 0.12) * 1.5;
+    ctx.fillStyle = 'rgba(190,240,255,.18)'; ctx.beginPath(); ctx.arc(j.x, j.y, rad, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(120,210,255,.75)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(j.x, j.y, rad, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(j.x - rad * 0.45, j.y - rad * 0.5, 7, 3.5, -0.6, 0, Math.PI * 2); ctx.fill();
+    if (G.shield > 1) { ctx.strokeStyle = 'rgba(120,210,255,.45)'; ctx.beginPath(); ctx.arc(j.x, j.y, rad + 6, 0, Math.PI * 2); ctx.stroke(); }
+  }
+  function drawToasts() {
+    G.toasts.forEach((t, i) => {
+      const a = Math.min(1, t.life / 25), y = H * 0.3 - (100 - t.life) * 0.4 - i * 34;
+      ctx.globalAlpha = a; ctx.font = '400 26px "Luckiest Guy", Impact, sans-serif'; ctx.textAlign = 'center';
+      ctx.lineWidth = 6; ctx.strokeStyle = '#7a4b2a'; ctx.strokeText(t.text, W / 2, y);
+      ctx.fillStyle = t.color; ctx.fillText(t.text, W / 2, y); ctx.globalAlpha = 1;
+    });
+  }
+  function drawCountdown() {
+    if (G.paused && G.state === 'play') { ctx.fillStyle = 'rgba(43,33,64,.25)'; ctx.fillRect(0, 0, W, H); }
+    if (G.countdown <= 0) return;
+    const n = Math.ceil(G.countdown / 30), f = (G.countdown % 30) / 30;
+    ctx.save(); ctx.translate(W / 2, H * 0.42); ctx.scale(1 + f * 0.4, 1 + f * 0.4);
+    ctx.font = '400 90px "Luckiest Guy", Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 10; ctx.strokeStyle = '#7a4b2a'; ctx.strokeText(n, 0, 0); ctx.fillStyle = '#fff'; ctx.fillText(n, 0, 0);
+    ctx.restore(); ctx.textBaseline = 'alphabetic';
   }
 
   function drawPowerBar() {
     if (G.power <= 0 || G.state === 'start') return;
     const w = 180, x = (W - w) / 2, y = scoreY() + 30;
     ctx.fillStyle = 'rgba(43,33,64,.55)'; rr(x - 3, y - 3, w + 6, 16, 8); ctx.fill();
-    ctx.fillStyle = '#b6e35a'; rr(x, y, w * (G.power / G.powerMax), 10, 5); ctx.fill();
+    ctx.fillStyle = G.powerType === 'broc' ? '#7fd88f' : '#b6e35a'; rr(x, y, w * (G.power / G.powerMax), 10, 5); ctx.fill();
     ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
-    ctx.fillText('Gas power', W / 2, y - 7);
+    ctx.fillText(G.powerType === 'broc' ? 'Floaty broccoli gas' : 'Turbo bean gas', W / 2, y - 7);
   }
 
   function drawParts() {
@@ -1137,8 +1295,7 @@
     });
   }
 
-  // Score sits just under the buttons so they never cover it
-  function scoreY() { return Math.max(78 + SAFE_TOP, HUD_BOTTOM + 52); }
+  function scoreY() { return 78 + SAFE_TOP; }
   function drawScore() {
     if (G.state === 'start') return;
     ctx.font = '400 56px "Luckiest Guy", Impact, sans-serif'; ctx.textAlign = 'center';
@@ -1148,7 +1305,7 @@
 
   function draw() {
     ctx.save();
-    if (G.shake > 0.5) ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake);
+    if (G.shake > 0.5 && Settings.shake) ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake);
     drawBackground();
     G.pipes.forEach(drawPipe);
     drawRelics();
@@ -1156,8 +1313,11 @@
     drawParts();
     drawAura(G.jack);
     drawJack(G.jack);
+    drawShield(G.jack);
     drawPowerBar();
     drawScore();
+    drawToasts();
+    drawCountdown();
     ctx.restore();
   }
 
@@ -1171,22 +1331,25 @@
 
   /* ---------- Input ---------- */
   function press(e) {
-    if (e && e.target && e.target.closest && e.target.closest('.btn')) return;
+    if (menuOpen) return;
+    if (e && e.target && e.target.closest && e.target.closest('.btn, .menu')) return;
     if (G.state === 'play') { flap(); }
     else if (G.state === 'dead' && !overPanel.classList.contains('hidden')) start();
   }
   document.getElementById('wrap').addEventListener('pointerdown', e => {
-    if (e.target.closest('.btn')) return;
+    if (e.target.closest('.btn, .menu') || menuOpen) return;
     e.preventDefault();
     if (Audio.ctx && Audio.ctx.state === 'suspended') Audio.ctx.resume();
     press(e);
   }, { passive: false });
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && Audio.ctx) Audio.ctx.suspend();
-    else if (Audio.ctx) Audio.ctx.resume();
+    if (document.hidden) { if (G.state === 'play' && !menuOpen) openMenu(); if (Audio.ctx) Audio.ctx.suspend(); }
+    else if (Audio.ctx && !G.paused) Audio.ctx.resume();
   });
   document.addEventListener('keydown', e => {
+    if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); menuOpen ? closeMenu() : openMenu(); return; }
+    if (menuOpen) return;
     if (e.code === 'Space' || e.code === 'ArrowUp') {
       e.preventDefault();
       if (G.state === 'play') flap();
@@ -1196,21 +1359,67 @@
   });
   document.getElementById('startBtn').addEventListener('click', start);
   document.getElementById('againBtn').addEventListener('click', start);
-  function syncToggles() {
-    musicBtn.setAttribute('aria-pressed', String(Audio.musicEnabled));
-    soundBtn.setAttribute('aria-pressed', String(Audio.sfxEnabled));
-    musicBtn.setAttribute('aria-label', 'Music ' + (Audio.musicEnabled ? 'on' : 'off'));
-    soundBtn.setAttribute('aria-label', 'Sound effects ' + (Audio.sfxEnabled ? 'on' : 'off'));
+  /* ---------- Menu: stats, sound and layout settings. Pauses the game while open. ---------- */
+  const menuPanel = document.getElementById('menuPanel'), menuBtn = document.getElementById('menuBtn');
+  let menuOpen = false, hiddenPanels = [], resetArmed = false;
+  const $ = id => document.getElementById(id);
+  function updateTries() {
+    $('startTries').textContent = Stats.tries ? 'Tries so far: ' + Stats.tries : '';
+    $('overTries').textContent = 'Try number ' + Stats.tries;
   }
-  musicBtn.addEventListener('click', () => {
-    Audio.init(); Audio.setMusic(!Audio.musicEnabled); syncToggles();
-    if (G.state === 'start') Audio.startMusic('menu');
+  function fillItem(key, n, textFn) {
+    const L = levelOf(n), next = L < 10 ? LEVELS[L] : null, prev = LEVELS[L - 1];
+    $(key + 'Lv').textContent = 'Level ' + L + (next ? '' : ' (max)');
+    $(key + 'Bar').style.width = (next ? (n - prev) / (next - prev) * 100 : 100) + '%';
+    $(key + 'Info').textContent = n + ' eaten' + (next ? ', ' + (next - n) + ' more to level ' + (L + 1) + '. ' : '. ') + textFn(L);
+  }
+  function syncMenu() {
+    $('stTries').textContent = Stats.tries; $('stBest').textContent = G.best; $('stPoints').textContent = Stats.points;
+    $('stAvg').textContent = Stats.tries ? (Stats.points / Stats.tries).toFixed(1) : '0'; $('stSmash').textContent = Stats.smashes;
+    fillItem('bean', Stats.beans, beanText); fillItem('broc', Stats.broc, brocText);
+    const cur = { music: Audio.musicEnabled ? '1' : '0', sfx: Audio.sfxEnabled ? '1' : '0', side: Settings.side, arena: Settings.arena, shake: Settings.shake ? '1' : '0' };
+    menuPanel.querySelectorAll('[data-set]').forEach(b => b.setAttribute('aria-pressed', String(cur[b.dataset.set] === b.dataset.val)));
+    $('resetBtn').textContent = resetArmed ? 'Tap again to reset' : 'Reset stats';
+  }
+  function openMenu() {
+    if (menuOpen) return;
+    menuOpen = true; resetArmed = false;
+    hiddenPanels = [startPanel, overPanel].filter(p => !p.classList.contains('hidden'));
+    hiddenPanels.forEach(p => p.classList.add('hidden'));
+    if (G.state === 'play') { G.paused = true; G.countdown = 0; if (Audio.ctx) Audio.ctx.suspend(); }
+    $('closeMenuBtn').textContent = G.state === 'play' ? 'Resume' : 'Close';
+    syncMenu(); menuPanel.classList.remove('hidden'); document.body.classList.add('menu-open'); menuPanel.scrollTop = 0; $('closeMenuBtn').focus({ preventScroll: true });
+  }
+  function closeMenu() {
+    if (!menuOpen) return;
+    menuOpen = false; menuPanel.classList.add('hidden'); document.body.classList.remove('menu-open');
+    hiddenPanels.forEach(p => p.classList.remove('hidden'));
+    if (G.state === 'play' && G.paused) { G.paused = false; G.countdown = 90; } // 3, 2, 1 before play resumes
+    menuBtn.focus();
+  }
+  menuBtn.addEventListener('click', () => { Audio.init(); menuOpen ? closeMenu() : openMenu(); });
+  $('closeMenuBtn').addEventListener('click', closeMenu);
+  function applySide() { document.body.classList.toggle('menu-left', Settings.side === 'left'); }
+  applySide();
+  menuPanel.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.set, v = b.dataset.val;
+    if (k === 'music') { Audio.init(); Audio.setMusic(v === '1'); }
+    else if (k === 'sfx') { Audio.init(); Audio.setSfx(v === '1'); }
+    else if (k === 'side') { Settings.side = v; applySide(); }
+    else if (k === 'arena') { Settings.arena = v; fit(); }
+    else if (k === 'shake') Settings.shake = v === '1';
+    saveSettings(); syncMenu();
+  }));
+  $('resetBtn').addEventListener('click', () => {
+    if (!resetArmed) { resetArmed = true; syncMenu(); return; }
+    Object.assign(Stats, { tries: 0, points: 0, smashes: 0, beans: 0, broc: 0 }); saveStats();
+    G.best = 0; try { localStorage.setItem('fartjack_best', '0'); } catch (e) {}
+    resetArmed = false; updateTries(); syncMenu();
   });
-  soundBtn.addEventListener('click', () => { Audio.init(); Audio.setSfx(!Audio.sfxEnabled); syncToggles(); });
-  syncToggles();
+  updateTries();
   // Browsers need one tap or key before sound can play: the first one starts the quiet menu tune
   const wake = e => {
-    if (e.target && e.target.closest && e.target.closest('#startBtn, #againBtn, .btn')) return;
+    if (e.target && e.target.closest && e.target.closest('#startBtn, #againBtn, .btn, .menu')) return;
     if (e.type === 'keydown' && (e.code === 'Space' || e.code === 'ArrowUp')) return;
     Audio.init();
     if (G.state === 'start') Audio.startMusic('menu');
