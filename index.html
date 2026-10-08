@@ -199,36 +199,118 @@
       for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
       return b;
     },
-    fart() {
+    // Pick a fart style. Avoids repeating the same one twice in a row most of the time.
+    fart(powered) {
       if (!this.ctx) return;
+      const pool = powered ? ['rip', 'rip', 'rip', 'whine', 'classic'] : ['classic', 'classic', 'burst', 'burst', 'rip', 'rip', 'whine'];
+      let k = pool[Math.floor(Math.random() * pool.length)];
+      if (k === this.lastFart && Math.random() < 0.7) k = pool[Math.floor(Math.random() * pool.length)];
+      this.lastFart = k;
+      const vol = powered ? 1.15 : 1;
+      if (k === 'whine') this.fartWhine(vol);
+      else if (k === 'burst') this.fartBurst(vol);
+      else if (k === 'rip') this.fartRip(vol);
+      else this.fartClassic(vol);
+    },
+    noiseLayer(t, len, f0, f1, q, vol, dest) {
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer(len);
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = q;
+      bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + len);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      src.connect(bp).connect(g).connect(dest || this.master); src.start(t);
+    },
+    // Original wobbly toot
+    fartClassic(vol) {
       const t = this.ctx.currentTime;
       const len = 0.22 + Math.random() * 0.18;
       const base = 70 + Math.random() * 50;
-      // Low flappy tone with wobble
-      const osc = this.ctx.createOscillator();
-      osc.type = 'sawtooth';
+      const osc = this.ctx.createOscillator(); osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(base * 1.6, t);
       osc.frequency.exponentialRampToValueAtTime(base * 0.6, t + len);
-      const lfo = this.ctx.createOscillator();
-      lfo.frequency.value = 28 + Math.random() * 20;
+      const lfo = this.ctx.createOscillator(); lfo.frequency.value = 28 + Math.random() * 20;
       const lfoGain = this.ctx.createGain(); lfoGain.gain.value = base * 0.5;
       lfo.connect(lfoGain).connect(osc.frequency);
       const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass';
       lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(220, t + len);
       const g = this.ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.5 * vol, t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + len);
       osc.connect(lp).connect(g).connect(this.master);
-      // Airy noise layer
-      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer(len);
-      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2;
-      bp.frequency.setValueAtTime(500, t); bp.frequency.exponentialRampToValueAtTime(150, t + len);
-      const ng = this.ctx.createGain();
-      ng.gain.setValueAtTime(0.25, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      src.connect(bp).connect(ng).connect(this.master);
-      osc.start(t); lfo.start(t); src.start(t);
+      this.noiseLayer(t, len, 500, 150, 2, 0.25 * vol);
+      osc.start(t); lfo.start(t);
       osc.stop(t + len + 0.05); lfo.stop(t + len + 0.05);
+    },
+    // Long, squeaky, whiney one that bends up then sags
+    fartWhine(vol) {
+      const t = this.ctx.currentTime;
+      const len = 0.6 + Math.random() * 0.35;
+      const base = 170 + Math.random() * 90;
+      const osc = this.ctx.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(base, t);
+      osc.frequency.linearRampToValueAtTime(base * 1.35, t + len * 0.35);
+      osc.frequency.exponentialRampToValueAtTime(base * 0.7, t + len);
+      const vib = this.ctx.createOscillator(); vib.frequency.value = 6 + Math.random() * 4;
+      const vibGain = this.ctx.createGain(); vibGain.gain.value = base * 0.12;
+      vib.connect(vibGain).connect(osc.frequency);
+      const flutter = this.ctx.createOscillator(); flutter.frequency.value = 45 + Math.random() * 15;
+      const flutterGain = this.ctx.createGain(); flutterGain.gain.value = base * 0.05;
+      flutter.connect(flutterGain).connect(osc.frequency);
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
+      bp.frequency.setValueAtTime(1100, t); bp.frequency.exponentialRampToValueAtTime(550, t + len);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.32 * vol, t + 0.06);
+      g.gain.setValueAtTime(0.3 * vol, t + len * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      osc.connect(bp).connect(g).connect(this.master);
+      this.noiseLayer(t, len, 1400, 700, 4, 0.06 * vol);
+      [osc, vib, flutter].forEach(o => { o.start(t); o.stop(t + len + 0.05); });
+    },
+    // Short, sharp pop
+    fartBurst(vol) {
+      const t = this.ctx.currentTime;
+      const len = 0.08 + Math.random() * 0.07;
+      const base = 95 + Math.random() * 45;
+      const osc = this.ctx.createOscillator(); osc.type = 'square';
+      osc.frequency.setValueAtTime(base * 1.4, t);
+      osc.frequency.exponentialRampToValueAtTime(base * 0.55, t + len);
+      const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.6 * vol, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      osc.connect(lp).connect(g).connect(this.master);
+      this.noiseLayer(t, len, 1300, 250, 1, 0.45 * vol);
+      osc.start(t); osc.stop(t + len + 0.03);
+    },
+    // Flappy rip: fast on/off flutter that slows down as it runs out
+    fartRip(vol) {
+      const t = this.ctx.currentTime;
+      const len = 0.35 + Math.random() * 0.25;
+      const base = 60 + Math.random() * 30;
+      const osc = this.ctx.createOscillator(); osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(base * 1.3, t);
+      osc.frequency.exponentialRampToValueAtTime(base * 0.75, t + len);
+      const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(800, t); lp.frequency.exponentialRampToValueAtTime(260, t + len);
+      // gate opens and shuts like flapping cheeks
+      const gate = this.ctx.createGain(); gate.gain.value = 0.5;
+      const flap = this.ctx.createOscillator(); flap.type = 'square';
+      flap.frequency.setValueAtTime(26 + Math.random() * 8, t);
+      flap.frequency.exponentialRampToValueAtTime(11 + Math.random() * 4, t + len);
+      const flapDepth = this.ctx.createGain(); flapDepth.gain.value = 0.5;
+      flap.connect(flapDepth).connect(gate.gain);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.6 * vol, t + 0.015);
+      g.gain.setValueAtTime(0.55 * vol, t + len * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      osc.connect(lp).connect(gate);
+      gate.connect(g).connect(this.master);
+      this.noiseLayer(t, len, 600, 180, 1.5, 0.35 * vol, gate);
+      [osc, flap].forEach(o => { o.start(t); o.stop(t + len + 0.05); });
     },
     ding() {
       if (!this.ctx) return;
@@ -374,8 +456,8 @@
     if (G.state !== 'play') return;
     G.jack.vy = G.flapV;
     G.jack.strain = 16;
-    Audio.fart();
     const powered = G.power > 0;
+    Audio.fart(powered);
     if (powered) { G.jack.vx = 5.5; G.jack.strain = 22; }
     const n = (reduceMotion ? 4 : 10) * (powered ? 3 : 1);
     for (let i = 0; i < n; i++) {
