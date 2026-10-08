@@ -71,24 +71,54 @@
     box-shadow: 0 4px 0 #c99a1a; cursor: pointer;
   }
   .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #c99a1a; }
+  :root { --soft: rgba(43,33,64,.07); --line: rgba(43,33,64,.18); --muted: rgba(43,33,64,.7); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --soft: rgba(255,255,255,.08); --line: rgba(255,255,255,.22); --muted: rgba(244,239,230,.78); } }
+  :root[data-theme="dark"] { --soft: rgba(255,255,255,.08); --line: rgba(255,255,255,.22); --muted: rgba(244,239,230,.78); }
   .panel.menu {
-    transform: none; max-width: 360px; max-height: calc(100% - 40px); overflow-y: auto; text-align: left;
-    -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+    transform: none; max-width: 380px; max-height: calc(100% - 32px); overflow-y: auto; text-align: left;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; position: relative;
   }
-  .menu h2 { text-align: center; }
-  .menu h3 { font: 800 13px "Nunito", sans-serif; margin: 18px 0 8px; opacity: .7; }
   body.menu-open #hud { display: none; }
-  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; font-size: 15px; }
-  .row b { font-weight: 800; }
-  .seg { display: flex; gap: 6px; }
-  .seg .btn, .row .btn { min-height: 38px; padding: 6px 12px; font-size: 14px; box-shadow: 0 3px 0 #c99a1a; }
-  .seg .btn[aria-pressed="false"] { background: transparent; box-shadow: inset 0 0 0 2px #c99a1a; }
-  .item { margin: 10px 0 4px; }
-  .item .top { display: flex; justify-content: space-between; font-weight: 800; }
-  .bar { height: 10px; border-radius: 6px; background: rgba(43,33,64,.15); overflow: hidden; margin: 5px 0 3px; }
+  .menu h2 { text-align: center; margin-bottom: 14px; }
+  .xbtn { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--soft); color: var(--ink); font: 800 22px/1 "Nunito", sans-serif; cursor: pointer; }
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .stat { background: var(--soft); border-radius: 14px; padding: 8px 2px; text-align: center; }
+  .stat .ico { font-size: 20px; display: block; line-height: 1.2; }
+  .stat b { display: block; font: 800 18px/1.2 "Nunito", sans-serif; }
+  .stat small { display: block; font-size: 12px; color: var(--muted); font-weight: 700; }
+  .snack { background: var(--soft); border-radius: 18px; padding: 12px; margin-top: 10px; }
+  .snack-top { display: flex; align-items: center; gap: 10px; }
+  .snack-top svg { width: 40px; height: 40px; flex: none; }
+  .snack-top .name { font: 800 17px "Nunito", sans-serif; flex: 1; }
+  .snack-top .lv { font: 400 26px/1 "Luckiest Guy", Impact, sans-serif; color: var(--poop); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .snack-top .lv { color: #ffcf8a; } }
+  .bar { height: 10px; border-radius: 6px; background: var(--line); overflow: hidden; margin: 8px 0 4px; }
   .bar i { display: block; height: 100%; border-radius: 6px; }
-  .perk { font-size: 13px; line-height: 1.35; opacity: .85; }
-  .menu .actions { display: flex; gap: 8px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+  .next { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { position: relative; width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--line); background: transparent; font-size: 21px; cursor: pointer; padding: 0; color: var(--ink); }
+  .chip.on { background: #ffcc3d; border-color: #c99a1a; }
+  .chip.off { filter: grayscale(1); opacity: .45; }
+  .chip .req { position: absolute; right: -4px; bottom: -6px; font: 800 10px/1 "Nunito", sans-serif; background: var(--ink); color: var(--paper); border-radius: 8px; padding: 2px 4px; }
+  .chip[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 1px; }
+  .tip { margin-top: 8px; font-size: 14px; line-height: 1.35; min-height: 19px; }
+  .tip b { font-weight: 800; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+  .tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; min-height: 76px; border-radius: 16px; cursor: pointer;
+    border: 2px solid var(--line); background: transparent; color: var(--ink); font: 700 13px "Nunito", sans-serif; touch-action: manipulation; }
+  .tile .ico { font-size: 22px; line-height: 1.1; }
+  .tile b { font-weight: 800; font-size: 13px; }
+  .tile.on { background: #ffcc3d; border-color: #c99a1a; color: #2b2140; }
+  .tile:focus-visible, .chip:focus-visible, .xbtn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .menu .actions { display: flex; justify-content: center; margin-top: 16px; }
+  .btn.wide { min-width: 180px; font-size: 17px; padding: 12px 22px; }
+  .linkbtn { display: block; margin: 12px auto 0; background: none; border: 0; color: var(--muted); font: 700 14px "Nunito", sans-serif; text-decoration: underline; cursor: pointer; min-height: 44px; }
+  .panel.levelup { transform: none; max-width: 300px; }
+  .levelup .lv-ico { font-size: 54px; line-height: 1; margin: 2px 0 6px; }
+  .levelup .lv-ico svg { width: 64px; height: 64px; }
+  .levelup h2 { font-size: 34px; }
+  .levelup .lv-desc { font-size: 17px; font-weight: 700; margin: 6px 0 4px; }
+  .levelup .lv-next { font-size: 14px; color: var(--muted); margin: 4px 0 16px; }
   .tries { font-size: 14px; opacity: .8; margin: -8px 0 14px; }
   .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
   #overlay {
@@ -137,35 +167,46 @@
       <button class="btn" id="againBtn">Try again</button>
     </div>
     <div class="panel menu hidden" id="menuPanel" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+      <button class="xbtn" id="xMenuBtn" aria-label="Close menu">&times;</button>
       <h2 id="menuTitle">Menu</h2>
-      <h3>Your stats</h3>
-      <div class="row"><span>Total tries</span><b id="stTries">0</b></div>
-      <div class="row"><span>Best score</span><b id="stBest">0</b></div>
-      <div class="row"><span>Total points</span><b id="stPoints">0</b></div>
-      <div class="row"><span>Average per try</span><b id="stAvg">0</b></div>
-      <div class="row"><span>Things smashed</span><b id="stSmash">0</b></div>
-      <div class="item">
-        <div class="top"><span>Beans</span><span id="beanLv">Level 1</span></div>
+      <div class="stats">
+        <div class="stat"><span class="ico" aria-hidden="true">🔁</span><b id="stTries">0</b><small>Tries</small></div>
+        <div class="stat"><span class="ico" aria-hidden="true">🏆</span><b id="stBest">0</b><small>Best</small></div>
+        <div class="stat"><span class="ico" aria-hidden="true">⭐</span><b id="stPoints">0</b><small>Points</small></div>
+        <div class="stat"><span class="ico" aria-hidden="true">📈</span><b id="stAvg">0</b><small>Avg</small></div>
+        <div class="stat"><span class="ico" aria-hidden="true">💥</span><b id="stSmash">0</b><small>Smashed</small></div>
+      </div>
+      <div class="snack">
+        <div class="snack-top"><span id="beanIcon"></span><span class="name">Beans</span><span class="lv" id="beanLv">Lv 0</span></div>
         <div class="bar"><i id="beanBar" style="background:#a0522d"></i></div>
-        <div class="perk" id="beanInfo"></div>
+        <div class="next" id="beanNext"></div>
+        <div class="chips" id="beanChips"></div>
+        <div class="tip" id="beanTip"></div>
       </div>
-      <div class="item">
-        <div class="top"><span>Broccoli</span><span id="brocLv">Level 1</span></div>
+      <div class="snack">
+        <div class="snack-top"><span id="brocIcon"></span><span class="name">Broccoli</span><span class="lv" id="brocLv">Lv 0</span></div>
         <div class="bar"><i id="brocBar" style="background:#3f8f3a"></i></div>
-        <div class="perk" id="brocInfo"></div>
+        <div class="next" id="brocNext"></div>
+        <div class="chips" id="brocChips"></div>
+        <div class="tip" id="brocTip"></div>
       </div>
-      <h3>Sound</h3>
-      <div class="row"><span>Music</span><div class="seg"><button class="btn" data-set="music" data-val="1">On</button><button class="btn" data-set="music" data-val="0">Off</button></div></div>
-      <div class="row"><span>Sound effects</span><div class="seg"><button class="btn" data-set="sfx" data-val="1">On</button><button class="btn" data-set="sfx" data-val="0">Off</button></div></div>
-      <h3>Layout</h3>
-      <div class="row"><span>Menu button</span><div class="seg"><button class="btn" data-set="side" data-val="left">Left</button><button class="btn" data-set="side" data-val="right">Right</button></div></div>
-      <div class="row"><span>Arena</span><div class="seg"><button class="btn" data-set="arena" data-val="fill">Fill screen</button><button class="btn" data-set="arena" data-val="classic">Classic</button></div></div>
-      <div class="row"><span>Screen shake</span><div class="seg"><button class="btn" data-set="shake" data-val="1">On</button><button class="btn" data-set="shake" data-val="0">Off</button></div></div>
-      <div class="row" id="fsRow"><span>Full screen</span><button class="btn" id="fsBtn">Go full screen</button></div>
-      <div class="actions">
-        <button class="btn" id="resetBtn">Reset stats</button>
-        <button class="btn" id="closeMenuBtn">Back to game</button>
+      <div class="tiles">
+        <button class="tile" data-set="music"><span class="ico" aria-hidden="true">🎵</span>Music<b></b></button>
+        <button class="tile" data-set="sfx"><span class="ico" aria-hidden="true">🔊</span>Sounds<b></b></button>
+        <button class="tile" data-set="shake"><span class="ico" aria-hidden="true">📳</span>Shake<b></b></button>
+        <button class="tile" data-set="side"><span class="ico" aria-hidden="true">↔️</span>Menu side<b></b></button>
+        <button class="tile" data-set="arena"><span class="ico" aria-hidden="true">🖼️</span>Arena<b></b></button>
+        <button class="tile" data-set="fs" id="fsTile"><span class="ico" aria-hidden="true">⛶</span>Full screen<b></b></button>
       </div>
+      <div class="actions"><button class="btn wide" id="closeMenuBtn">Resume</button></div>
+      <button class="linkbtn" id="resetBtn">Reset stats</button>
+    </div>
+    <div class="panel levelup hidden" id="lvPanel" role="dialog" aria-modal="true" aria-labelledby="lvTitle">
+      <div class="lv-ico" id="lvIcon" aria-hidden="true"></div>
+      <h2 id="lvTitle">Level up!</h2>
+      <p class="lv-desc" id="lvDesc"></p>
+      <p class="lv-next" id="lvNext"></p>
+      <button class="btn wide" id="lvBtn">Keep going</button>
     </div>
   </div>
 </div>
@@ -213,7 +254,7 @@
   const coarse = matchMedia('(pointer: coarse)').matches;
 
   /* ---------- Fullscreen ---------- */
-  const fsBtn = document.getElementById('fsBtn');
+
   const rootEl = document.documentElement;
   const canFS = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen) && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   const isFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -225,10 +266,9 @@
     } catch (e) {}
   }
   function exitFS() { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
-  if (!canFS) document.getElementById('fsRow').classList.add('hidden');
-  fsBtn.addEventListener('click', () => { isFS() ? exitFS() : enterFS(); });
+  if (!canFS) document.getElementById('fsTile').classList.add('hidden');
   ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => {
-    fsBtn.textContent = isFS() ? 'Exit full screen' : 'Go full screen';
+    if (typeof syncMenu === 'function') syncMenu();
     fit(); setTimeout(fit, 150);
   }));
 
@@ -723,6 +763,13 @@
       [0, 4, 7, 12, 16].forEach((s, i) => this.pluck(s + 12, t + i * 0.06, 0.12, this.sfx, 0.3));
       this.bell(28, t + 0.3, 0.08, this.sfx);
     },
+    boing() {
+      if (!this.ctx) return;
+      const c = this.ctx, t = c.currentTime, o = c.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(520, t + 0.18);
+      const g = c.createGain(); g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+      o.connect(g).connect(this.sfx); o.start(t); o.stop(t + 0.27);
+    },
     shieldPop() {
       if (!this.ctx) return;
       const t = this.ctx.currentTime;
@@ -751,41 +798,81 @@
     speed: 2.6, gap: 165, spawnEvery: 95, frame: 0,
     score: 0, best: 0, shake: 0, t: 0,
     relics: [], debris: [], power: 0, powerMax: 420, nextRelic: 300,
-    powerType: 'bean', shield: 0, ghost: 0, toasts: [], paused: false, countdown: 0
+    powerType: 'bean', shield: 0, ghost: 0, toasts: [], paused: false, countdown: 0, shots: [], regrowT: 0
   };
   try { G.best = parseInt(localStorage.getItem('fartjack_best') || '0', 10) || 0; } catch (e) { G.best = 0; }
 
   const TYPES = ['tp', 'beans', 'plunger', 'tp'];
 
-  /* ---------- Bean and broccoli levels: every one eaten counts forever ---------- */
-  const LEVELS = [0, 3, 8, 15, 25, 40, 60, 85, 115, 150]; // eaten needed for levels 1 to 10
-  function levelOf(n) { let L = 1; for (let i = 1; i < LEVELS.length; i++) if (n >= LEVELS[i]) L = i + 1; return L; }
-  // Beans: turbo gets longer and stronger, smashes pay more and refill gas
+  /* ---------- Bean and broccoli levels: 0 to 100, every snack eaten counts forever ---------- */
+  // Snacks needed: levels 1-9 at 3, 8, 15, 25, 40, 60, 85, 115, 150, then +40, +45, then +50 per level
+  const LV = (() => { const t = [0, 3, 8, 15, 25, 40, 60, 85, 115, 150]; for (let L = 10; L <= 100; L++) t.push(t[L - 1] + (L === 10 ? 40 : L === 11 ? 45 : 50)); return t; })();
+  function levelOf(n) { let L = 0; while (L < 100 && n >= LV[L + 1]) L++; return L; }
   function beanPerks(L) {
-    return { dur: 1 + 0.08 * (L - 1), boost: 5.5 + 0.3 * (L - 1), smashPts: L >= 9 ? 3 : L >= 3 ? 2 : 1, refund: L >= 6 };
+    return {
+      dur: 1 + 0.025 * L, boost: 5.5 + 0.035 * L,
+      smashPts: L >= 100 ? 10 : L >= 75 ? 7 : L >= 50 ? 5 : L >= 25 ? 4 : L >= 9 ? 3 : L >= 3 ? 2 : 1,
+      refund: L >= 50 ? 70 : L >= 6 ? 35 : 0,
+      chain: L >= 15, armor: L >= 20, rain: L >= 30, headStart: L >= 40, cannon: L >= 60, bottomless: L >= 80, god: L >= 100
+    };
   }
-  // Broccoli: lighter, floatier gas, then a shield bubble, then a magnet for snacks
   function brocPerks(L) {
-    return { dur: 1 + 0.06 * (L - 1), float: L >= 2 ? 1 - 0.035 * (L - 1) : 1, shield: L >= 10 ? 2 : L >= 4 ? 1 : 0, magnet: L >= 7 ? 90 + 15 * (L - 7) : 0 };
+    return {
+      dur: 1 + 0.019 * L,
+      float: L >= 2 ? Math.max(0.5, 1 - 0.035 * Math.min(L, 10) - 0.0025 * Math.max(0, L - 10)) : 1,
+      shield: L >= 100 ? 99 : L >= 60 ? 4 : L >= 30 ? 3 : L >= 10 ? 2 : L >= 4 ? 1 : 0,
+      magnet: L >= 7 ? Math.min(380, 90 + 3 * (L - 7)) : 0,
+      regrow: L >= 20, bouncy: L >= 40, wide: L >= 50, slowmo: L >= 75, god: L >= 100
+    };
   }
-  function beanText(L) {
-    const p = beanPerks(L), parts = ['Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec with a ' + Math.round((p.boost / 5.5 - 1) * 100) + '% stronger push.'];
-    parts.push(p.smashPts > 1 ? 'Smashes are worth ' + p.smashPts + ' points.' : 'Level 3: smashes worth 2 points.');
-    parts.push(p.refund ? 'Each smash refills a little gas.' : 'Level 6: smashes refill gas.');
-    if (L < 9) parts.push('Level 9: smashes worth 3.');
-    return parts.join(' ');
-  }
-  function brocText(L) {
-    const p = brocPerks(L), parts = ['Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec.'];
-    parts.push(p.float < 1 ? 'You fall ' + Math.round((1 - p.float) * 100) + '% slower while powered.' : 'Level 2: floaty gas.');
-    parts.push(p.shield ? 'Each one gives a shield that blocks ' + p.shield + (p.shield > 1 ? ' crashes.' : ' crash.') : 'Level 4: shield bubble.');
-    parts.push(p.magnet ? 'Snacks drift toward you.' : 'Level 7: snack magnet.');
-    return parts.join(' ');
+  const bP = () => beanPerks(levelOf(Stats.beans)), cP = () => brocPerks(levelOf(Stats.broc));
+  // Unlocks shown as icons in the menu and on the level-up card
+  const UNLOCKS = {
+    beans: [
+      [0, '🚀', 'Turbo smash', 'Mid-blast flaps smash through anything.'],
+      [3, '✌️', 'Double smash', 'Smashes are worth 2 points.'],
+      [6, '⛽', 'Refill', 'Every smash refills some gas.'],
+      [9, '3️⃣', 'Triple smash', 'Smashes are worth 3 points.'],
+      [15, '⛓️', 'Chain smash', 'Each smash also wrecks the next column.'],
+      [20, '🔥', 'Gas armor', 'While powered, you smash on contact. No timing needed.'],
+      [25, '4️⃣', 'Quad smash', 'Smashes are worth 4 points.'],
+      [30, '🌧️', 'Snack rain', 'Snacks show up more often.'],
+      [40, '🏁', 'Head start', 'Every run starts with turbo.'],
+      [50, '5️⃣', 'Mega smash', 'Smashes are worth 5 and refill double.'],
+      [60, '💨', 'Gas cannon', 'Powered flaps fire a blast that smashes ahead.'],
+      [75, '7️⃣', 'Ultra smash', 'Smashes are worth 7 points.'],
+      [80, '♾️', 'Bottomless', 'Turbo refills every 10 points.'],
+      [100, '👑', 'Bean God', 'Turbo never ends. Smashes are worth 10.']
+    ],
+    broc: [
+      [0, '🚀', 'Turbo smash', 'Mid-blast flaps smash through anything.'],
+      [2, '🍃', 'Floaty', 'You fall slower while powered.'],
+      [4, '🛡️', 'Shield', 'Each broccoli gives a bubble that blocks a crash.'],
+      [7, '🧲', 'Magnet', 'Snacks drift toward you.'],
+      [10, '🛡️', 'Double shield', 'Bubbles block 2 crashes.'],
+      [20, '🌱', 'Regrow', 'Lost shields grow back over time.'],
+      [30, '🛡️', 'Triple shield', 'Bubbles block 3 crashes.'],
+      [40, '🏀', 'Bouncy', 'The floor bounces you back up.'],
+      [50, '↕️', 'Wide gaps', 'Columns have wider gaps.'],
+      [60, '🛡️', 'Quad shield', 'Bubbles block 4 crashes.'],
+      [75, '🐢', 'Slow-mo', 'Everything slows down while powered.'],
+      [100, '👑', 'Broccoli God', 'Nothing can make you crash.']
+    ]
+  };
+  const ICON = {
+    beans: '<svg viewBox="-20 -20 40 40" aria-hidden="true"><circle r="19" fill="rgba(255,230,120,.45)"/><path d="M-12 -4C-16 10 8 16 14 4 18 -8 2 -16 -4 -10-8 -6-2 -2-12 -4Z" fill="#a0522d"/><ellipse cx="-4" cy="-5" rx="5" ry="2.5" fill="rgba(255,255,255,.45)" transform="rotate(-28 -4 -5)"/></svg>',
+    broc: '<svg viewBox="-20 -20 40 40" aria-hidden="true"><circle r="19" fill="rgba(255,230,120,.45)"/><rect x="-4" y="0" width="8" height="16" rx="3" fill="#9ccf6a"/><g fill="#3f8f3a"><circle cx="-9" cy="-4" r="8"/><circle cx="0" cy="-10" r="9"/><circle cx="9" cy="-4" r="8"/><circle cx="-3" cy="0" r="6"/><circle cx="5" cy="0" r="6"/></g><g fill="#5fb04f"><circle cx="-8" cy="-6" r="3"/><circle cx="2" cy="-12" r="3"/><circle cx="10" cy="-6" r="3"/></g></svg>'
+  };
+  // What a plain level-up (no new unlock) improves
+  function bumpText(key, L) {
+    if (key === 'beans') { const p = beanPerks(L); return 'Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec and pushes harder.'; }
+    const p = brocPerks(L);
+    return 'Turbo lasts ' + (3.2 * p.dur).toFixed(1) + ' sec' + (p.float < 1 ? ', floatier' : '') + (p.magnet ? ', stronger magnet' : '') + '.';
   }
 
   function reset() {
     G.jack = { x: 110, y: H / 2, vy: 0, vx: 0, r: 22, rot: 0, strain: 0, fx: 0, fxMax: 1, fxInt: 0, relief: 0, reliefInt: 0, happy: 0, happyKind: 'grin', scared: 0, blink: 0, blinkT: 120 };
-    G.pipes = []; G.parts = []; G.relics = []; G.debris = []; G.power = 0; G.powerType = 'bean'; G.shield = 0; G.ghost = 0; G.toasts = []; G.countdown = 0; G.nextRelic = 300; G.score = 0; G.frame = 0; G.speed = 2.6; G.gap = 165; G.shake = 0;
+    G.pipes = []; G.parts = []; G.relics = []; G.debris = []; G.power = 0; G.powerType = 'bean'; G.shield = 0; G.ghost = 0; G.toasts = []; G.countdown = 0; G.shots = []; G.regrowT = 0; G.nextRelic = 300; G.score = 0; G.frame = 0; G.speed = 2.6; G.gap = 165; G.shake = 0;
     for (let i = 0; i < 6; i++) G.clouds.push({ x: Math.random() * W, y: 40 + Math.random() * 300, s: 0.6 + Math.random() * 0.8, v: 0.15 + Math.random() * 0.2 });
     G.clouds = G.clouds.slice(-6);
   }
@@ -795,14 +882,20 @@
     for (let i = 0; i < (n || 1); i++) {
       G.score++;
       if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+      if (G.score % 10 === 0 && bP().bottomless) giveTurbo('bean');
     }
+  }
+  function giveTurbo(type) {
+    const L = levelOf(type === 'bean' ? Stats.beans : Stats.broc);
+    G.powerType = type; G.powerMax = 420 * (type === 'bean' ? beanPerks(L).dur : brocPerks(L).dur); G.power = G.powerMax;
   }
   function toast(text, color) { G.toasts.push({ text, color: color || '#fff', life: 100 }); }
 
   function spawnPipe(x) {
     const margin = 90;
-    const gapY = margin + Math.random() * (H - 110 - margin * 2 - G.gap);
-    G.pipes.push({ x, gapY, gap: G.gap, type: TYPES[Math.floor(Math.random() * TYPES.length)], passed: false, w: 66 });
+    const gap = G.gap + (cP().wide ? 30 : 0);
+    const gapY = margin + Math.random() * (H - 110 - margin * 2 - gap);
+    G.pipes.push({ x, gapY, gap, type: TYPES[Math.floor(Math.random() * TYPES.length)], passed: false, w: 66 });
   }
 
   function spawnRelic() {
@@ -810,10 +903,10 @@
       x: W + 30, y: 70 + Math.random() * (H - 220), type: Math.random() < 0.5 ? 'bean' : 'broccoli',
       phase: Math.random() * Math.PI * 2, vy: (Math.random() - 0.5) * 0.6, r: 16
     });
-    G.nextRelic = 480 + Math.floor(Math.random() * 420);
+    G.nextRelic = Math.round((480 + Math.random() * 420) * (bP().rain ? 0.65 : 1));
   }
 
-  function breakPipe(p) {
+  function breakPipe(p, noChain) {
     const colors = p.type === 'tp' ? ['#fffdf7', '#d9d2c3', '#c9a070'] : p.type === 'beans' ? ['#d64545', '#ffe066', '#b5b5b5'] : ['#c98b4a', '#c93a5a', '#a06c33'];
     const n = reduceMotion ? 10 : 26;
     for (let i = 0; i < n; i++) {
@@ -824,9 +917,14 @@
     Audio.crunch();
     G.jack.happy = 30; G.jack.happyKind = 'fierce';
     if (G.state === 'play') Stats.smashes++;
-    const bean = G.power > 0 && G.powerType === 'bean' ? beanPerks(levelOf(Stats.beans)) : null;
-    if (bean && bean.refund) G.power = Math.min(G.powerMax, G.power + 35);
+    const bean = G.power > 0 && G.powerType === 'bean' ? bP() : null;
+    if (bean && bean.refund) G.power = Math.min(G.powerMax, G.power + bean.refund);
     if (!p.passed) { p.passed = true; addPoint(bean ? bean.smashPts : 1); }
+    p.dead = true;
+    if (bean && bean.chain && !noChain) {
+      const nx = G.pipes.find(q => !q.dead && q.x > p.x + 10 && q.x - p.x < 330);
+      if (nx) breakPipe(nx, true);
+    }
   }
 
   function eat(r) {
@@ -834,16 +932,14 @@
     const before = levelOf(Stats[key]);
     Stats[key]++; saveStats();
     const L = levelOf(Stats[key]);
-    G.powerType = bean ? 'bean' : 'broc';
-    G.powerMax = 420 * (bean ? beanPerks(L).dur : brocPerks(L).dur);
-    G.power = G.powerMax;
+    giveTurbo(bean ? 'bean' : 'broc');
     const sh = bean ? 0 : brocPerks(L).shield;
-    if (sh > G.shield) { G.shield = sh; toast('Shield up!', '#bdf3ff'); }
-    if (L > before) { toast((bean ? 'Beans' : 'Broccoli') + ' level ' + L + '!', bean ? '#ffd9a8' : '#c9f7a8'); Audio.levelUp(); }
+    if (sh > G.shield) { G.shield = sh; toast(sh > 9 ? 'Endless shield!' : 'Shield up!', '#bdf3ff'); }
+    if (L > before) showLevelUp(bean ? 'beans' : 'broc', L);
   }
   function popShield() {
-    G.shield--; G.ghost = 45; G.shake = Math.max(G.shake, 6);
-    Audio.shieldPop(); toast(G.shield > 0 ? 'Shield saved you! One left' : 'Shield saved you!', '#bdf3ff');
+    if (!cP().god) G.shield--; G.ghost = 45; G.shake = Math.max(G.shake, 6);
+    Audio.shieldPop(); toast(G.shield > 9 ? 'Untouchable!' : G.shield > 0 ? 'Shield saved you! ' + G.shield + ' left' : 'Shield saved you!', '#bdf3ff');
     for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; G.parts.push({ x: G.jack.x + Math.cos(a) * 34, y: G.jack.y + Math.sin(a) * 34, vx: Math.cos(a) * 2, vy: Math.sin(a) * 2, r: 4, life: 0.8 }); }
   }
 
@@ -856,7 +952,11 @@
     const jj = G.jack;
     jj.fx = jj.fxMax = Math.max(10, Math.round(info.dur * 60));
     jj.fxInt = info.int; jj.relief = 0;
-    if (powered) { G.jack.vx = G.powerType === 'bean' ? beanPerks(levelOf(Stats.beans)).boost : 5.5; G.jack.strain = 22; }
+    if (powered) {
+      const b = bP();
+      G.jack.vx = G.powerType === 'bean' ? b.boost : 5.5; G.jack.strain = 22;
+      if (G.powerType === 'bean' && b.cannon) G.shots.push({ x: G.jack.x + 24, y: G.jack.y, r: 14, life: 1 });
+    }
     const n = (reduceMotion ? 4 : 10) * (powered ? 3 : 1);
     for (let i = 0; i < n; i++) {
       const k = powered ? 2.2 : 1;
@@ -871,6 +971,8 @@
     reset();
     G.state = 'play';
     Stats.tries++; saveStats(); updateTries();
+    if (bP().headStart) giveTurbo('bean');
+    if (cP().god) G.shield = 99;
     if (canFS && coarse && !isFS()) enterFS();
     // On wide screens, place the pipes that would already be in view (first one matches the 420-wide timing)
     for (let x = 460 + G.spawnEvery * G.speed; x < W + 40; x += G.spawnEvery * G.speed) spawnPipe(x);
@@ -914,7 +1016,12 @@
       return;
     }
     const j = G.jack;
-    const floaty = G.power > 0 && G.powerType === 'broc' ? brocPerks(levelOf(Stats.broc)).float : 1;
+    const b = bP(), c = cP();
+    if (b.god && G.power < 5) giveTurbo(G.powerType === 'broc' ? 'broc' : 'bean');
+    if (c.god) G.shield = 99;
+    if (c.regrow && c.shield && G.shield < c.shield && ++G.regrowT >= 900) { G.regrowT = 0; G.shield++; toast('Shield grew back!', '#bdf3ff'); }
+    const floaty = c.god ? c.float : G.power > 0 && G.powerType === 'broc' ? c.float : 1;
+    const slow = c.slowmo && G.power > 0 && G.powerType === 'broc' ? 0.75 : 1;
     j.vy += G.gravity * floaty; j.y += j.vy;
     if (G.ghost > 0) G.ghost--;
     j.x += j.vx; j.vx *= 0.88;
@@ -927,16 +1034,22 @@
     else if (G.frame % G.spawnEvery === 0) spawnPipe(W + 40);
     if (--G.nextRelic <= 0) spawnRelic();
     if (G.power > 0) G.power = Math.max(0, G.power - 2.2);
-    const magnet = brocPerks(levelOf(Stats.broc)).magnet;
+    const magnet = c.magnet;
     if (magnet) G.relics.forEach(r => { const dx = j.x - r.x, dy = j.y - r.y, d = Math.hypot(dx, dy); if (d < magnet && d > 1) { r.x += dx / d * 3; r.y += dy / d * 3; } });
-    G.relics.forEach(r => { r.x -= G.speed * 0.75; r.phase += 0.06; r.y += r.vy + Math.sin(r.phase) * 0.9; if (r.y < 40) r.vy = Math.abs(r.vy); if (r.y > H - 150) r.vy = -Math.abs(r.vy); });
+    G.relics.forEach(r => { r.x -= G.speed * 0.75 * slow; r.phase += 0.06; r.y += r.vy + Math.sin(r.phase) * 0.9; if (r.y < 40) r.vy = Math.abs(r.vy); if (r.y > H - 150) r.vy = -Math.abs(r.vy); });
     G.relics = G.relics.filter(r => {
       if (Math.hypot(r.x - j.x, r.y - j.y) < r.r + j.r - 4) { eat(r); Audio.powerup(); j.happy = 55; j.happyKind = 'star';
         for (let i = 0; i < 14; i++) G.parts.push({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, r: 4 + Math.random() * 6, life: 1 });
         return false; }
       return r.x > -40;
     });
-    G.pipes.forEach(p => p.x -= G.speed);
+    G.pipes.forEach(p => p.x -= G.speed * slow);
+    // gas cannon blasts
+    G.shots.forEach(sh => { sh.x += 10; sh.r += 0.6; sh.life -= 0.02;
+      const hit = G.pipes.find(p => !p.dead && sh.x + sh.r > p.x && sh.x - sh.r < p.x + p.w);
+      if (hit) { breakPipe(hit); sh.life = 0; } });
+    G.shots = G.shots.filter(sh => sh.life > 0 && sh.x < W + 60);
+    G.pipes = G.pipes.filter(p => !p.dead);
     G.pipes = G.pipes.filter(p => p.x > -100);
     for (const p of G.pipes) {
       if (!p.passed && p.x + p.w < j.x) {
@@ -945,7 +1058,7 @@
       }
       const hitX = j.x + j.r - 4 > p.x && j.x - j.r + 4 < p.x + p.w;
       if (hitX && (j.y - j.r + 4 < p.gapY || j.y + j.r - 4 > p.gapY + p.gap)) {
-        if (G.power > 0 && j.strain > 0) { breakPipe(p); p.dead = true; }
+        if (G.power > 0 && (j.strain > 0 || (G.powerType === 'bean' && b.armor) || b.god)) { breakPipe(p); p.dead = true; }
         else if (G.ghost > 0) { /* just saved by the shield */ }
         else if (G.shield > 0) { popShield(); breakPipe(p); p.dead = true; j.vy = G.flapV * 0.6; }
         else { die(); return; }
@@ -958,7 +1071,8 @@
     Audio.setTension(inCol);
     if (j.y + j.r > H - 110) {
       j.y = H - 110 - j.r;
-      if (G.shield > 0 && G.ghost <= 0) { popShield(); j.vy = G.flapV; } else if (G.ghost <= 0) die();
+      if (c.bouncy || c.god) { j.vy = G.flapV * 1.05; if (G.ghost <= 0) { Audio.boing(); G.ghost = 10; } }
+      else if (G.shield > 0 && G.ghost <= 0) { popShield(); j.vy = G.flapV; } else if (G.ghost <= 0) die();
     }
     if (j.y - j.r < 0) { j.y = j.r; j.vy = 0; }
   }
@@ -1259,7 +1373,14 @@
     ctx.fillStyle = 'rgba(190,240,255,.18)'; ctx.beginPath(); ctx.arc(j.x, j.y, rad, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(120,210,255,.75)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(j.x, j.y, rad, 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(j.x - rad * 0.45, j.y - rad * 0.5, 7, 3.5, -0.6, 0, Math.PI * 2); ctx.fill();
-    if (G.shield > 1) { ctx.strokeStyle = 'rgba(120,210,255,.45)'; ctx.beginPath(); ctx.arc(j.x, j.y, rad + 6, 0, Math.PI * 2); ctx.stroke(); }
+    for (let i = 1; i < Math.min(G.shield, 4); i++) { ctx.strokeStyle = 'rgba(120,210,255,.4)'; ctx.beginPath(); ctx.arc(j.x, j.y, rad + 6 * i, 0, Math.PI * 2); ctx.stroke(); }
+    if (G.shield > 9) { ctx.strokeStyle = 'rgba(255,215,90,.8)'; ctx.lineWidth = 2; ctx.setLineDash([4, 6]); ctx.lineDashOffset = G.t; ctx.beginPath(); ctx.arc(j.x, j.y, rad + 8, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+  }
+  function drawShots() {
+    G.shots.forEach(sh => {
+      ctx.fillStyle = `rgba(182,227,90,${0.5 * sh.life})`; ctx.beginPath(); ctx.arc(sh.x, sh.y, sh.r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(120,200,40,${0.9 * sh.life})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(sh.x, sh.y, sh.r * 0.7, -1.2, 1.2); ctx.stroke();
+    });
   }
   function drawToasts() {
     G.toasts.forEach((t, i) => {
@@ -1314,6 +1435,7 @@
     drawAura(G.jack);
     drawJack(G.jack);
     drawShield(G.jack);
+    drawShots();
     drawPowerBar();
     drawScore();
     drawToasts();
@@ -1331,23 +1453,24 @@
 
   /* ---------- Input ---------- */
   function press(e) {
-    if (menuOpen) return;
+    if (menuOpen || lvOpen) return;
     if (e && e.target && e.target.closest && e.target.closest('.btn, .menu')) return;
     if (G.state === 'play') { flap(); }
     else if (G.state === 'dead' && !overPanel.classList.contains('hidden')) start();
   }
   document.getElementById('wrap').addEventListener('pointerdown', e => {
-    if (e.target.closest('.btn, .menu') || menuOpen) return;
+    if (e.target.closest('.btn, .menu, .levelup') || menuOpen || lvOpen) return;
     e.preventDefault();
     if (Audio.ctx && Audio.ctx.state === 'suspended') Audio.ctx.resume();
     press(e);
   }, { passive: false });
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) { if (G.state === 'play' && !menuOpen) openMenu(); if (Audio.ctx) Audio.ctx.suspend(); }
+    if (document.hidden) { if (G.state === 'play' && !menuOpen && !lvOpen) openMenu(); if (Audio.ctx) Audio.ctx.suspend(); }
     else if (Audio.ctx && !G.paused) Audio.ctx.resume();
   });
   document.addEventListener('keydown', e => {
+    if (lvOpen) { if (e.code === 'Space' || e.code === 'Enter' || e.code === 'Escape') { e.preventDefault(); closeLevelUp(); } return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); menuOpen ? closeMenu() : openMenu(); return; }
     if (menuOpen) return;
     if (e.code === 'Space' || e.code === 'ArrowUp') {
@@ -1359,36 +1482,61 @@
   });
   document.getElementById('startBtn').addEventListener('click', start);
   document.getElementById('againBtn').addEventListener('click', start);
-  /* ---------- Menu: stats, sound and layout settings. Pauses the game while open. ---------- */
+  /* ---------- Menu: stats, snack levels and settings. Pauses the game while open. ---------- */
   const menuPanel = document.getElementById('menuPanel'), menuBtn = document.getElementById('menuBtn');
-  let menuOpen = false, hiddenPanels = [], resetArmed = false;
+  let menuOpen = false, lvOpen = false, hiddenPanels = [], resetArmed = false;
   const $ = id => document.getElementById(id);
+  $('beanIcon').innerHTML = ICON.beans; $('brocIcon').innerHTML = ICON.broc;
   function updateTries() {
     $('startTries').textContent = Stats.tries ? 'Tries so far: ' + Stats.tries : '';
     $('overTries').textContent = 'Try number ' + Stats.tries;
   }
-  function fillItem(key, n, textFn) {
-    const L = levelOf(n), next = L < 10 ? LEVELS[L] : null, prev = LEVELS[L - 1];
-    $(key + 'Lv').textContent = 'Level ' + L + (next ? '' : ' (max)');
-    $(key + 'Bar').style.width = (next ? (n - prev) / (next - prev) * 100 : 100) + '%';
-    $(key + 'Info').textContent = n + ' eaten' + (next ? ', ' + (next - n) + ' more to level ' + (L + 1) + '. ' : '. ') + textFn(L);
+  function nextUnlock(key, L) { return UNLOCKS[key].find(u => u[0] > L); }
+  function fillSnack(id, key, n) {
+    const L = levelOf(n), max = L >= 100, prev = LV[L], next = max ? null : LV[L + 1];
+    $(id + 'Lv').textContent = 'Lv ' + L;
+    $(id + 'Bar').style.width = (max ? 100 : (n - prev) / (next - prev) * 100) + '%';
+    const nu = nextUnlock(key, L);
+    $(id + 'Next').textContent = max ? n + ' eaten. Max level!' : n + ' eaten, ' + (next - n) + ' more to Lv ' + (L + 1) + (nu ? '. Next unlock at Lv ' + nu[0] : '');
+    const box = $(id + 'Chips'); box.innerHTML = '';
+    UNLOCKS[key].forEach(u => {
+      const on = L >= u[0], b = document.createElement('button');
+      b.className = 'chip ' + (on ? 'on' : 'off'); b.setAttribute('aria-pressed', 'false');
+      b.setAttribute('aria-label', u[2] + (on ? '' : ', unlocks at level ' + u[0]));
+      b.innerHTML = '<span aria-hidden="true">' + u[1] + '</span>' + (on ? '' : '<span class="req">' + u[0] + '</span>');
+      b.addEventListener('click', () => {
+        box.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true');
+        $(id + 'Tip').innerHTML = '<b>' + u[2] + '</b> ' + (on ? '' : '(Lv ' + u[0] + ') ') + u[3];
+      });
+      box.appendChild(b);
+    });
+    $(id + 'Tip').textContent = 'Tap an icon to see what it does.';
   }
   function syncMenu() {
     $('stTries').textContent = Stats.tries; $('stBest').textContent = G.best; $('stPoints').textContent = Stats.points;
     $('stAvg').textContent = Stats.tries ? (Stats.points / Stats.tries).toFixed(1) : '0'; $('stSmash').textContent = Stats.smashes;
-    fillItem('bean', Stats.beans, beanText); fillItem('broc', Stats.broc, brocText);
-    const cur = { music: Audio.musicEnabled ? '1' : '0', sfx: Audio.sfxEnabled ? '1' : '0', side: Settings.side, arena: Settings.arena, shake: Settings.shake ? '1' : '0' };
-    menuPanel.querySelectorAll('[data-set]').forEach(b => b.setAttribute('aria-pressed', String(cur[b.dataset.set] === b.dataset.val)));
-    $('resetBtn').textContent = resetArmed ? 'Tap again to reset' : 'Reset stats';
+    const state = {
+      music: [Audio.musicEnabled, Audio.musicEnabled ? 'On' : 'Off'], sfx: [Audio.sfxEnabled, Audio.sfxEnabled ? 'On' : 'Off'],
+      shake: [Settings.shake, Settings.shake ? 'On' : 'Off'], side: [true, Settings.side === 'left' ? 'Left' : 'Right'],
+      arena: [true, Settings.arena === 'classic' ? 'Classic' : 'Fill'], fs: [isFS(), isFS() ? 'On' : 'Off']
+    };
+    menuPanel.querySelectorAll('.tile').forEach(t => {
+      const [on, label] = state[t.dataset.set];
+      t.classList.toggle('on', on); t.querySelector('b').textContent = label;
+      if (t.dataset.set !== 'side' && t.dataset.set !== 'arena') t.setAttribute('aria-pressed', String(on));
+    });
+    $('resetBtn').textContent = resetArmed ? 'Tap again to erase all stats' : 'Reset stats';
   }
   function openMenu() {
-    if (menuOpen) return;
+    if (menuOpen || lvOpen) return;
     menuOpen = true; resetArmed = false;
     hiddenPanels = [startPanel, overPanel].filter(p => !p.classList.contains('hidden'));
     hiddenPanels.forEach(p => p.classList.add('hidden'));
     if (G.state === 'play') { G.paused = true; G.countdown = 0; if (Audio.ctx) Audio.ctx.suspend(); }
     $('closeMenuBtn').textContent = G.state === 'play' ? 'Resume' : 'Close';
-    syncMenu(); menuPanel.classList.remove('hidden'); document.body.classList.add('menu-open'); menuPanel.scrollTop = 0; $('closeMenuBtn').focus({ preventScroll: true });
+    fillSnack('bean', 'beans', Stats.beans); fillSnack('broc', 'broc', Stats.broc); syncMenu();
+    menuPanel.classList.remove('hidden'); document.body.classList.add('menu-open'); menuPanel.scrollTop = 0;
+    $('closeMenuBtn').focus({ preventScroll: true });
   }
   function closeMenu() {
     if (!menuOpen) return;
@@ -1399,27 +1547,49 @@
   }
   menuBtn.addEventListener('click', () => { Audio.init(); menuOpen ? closeMenu() : openMenu(); });
   $('closeMenuBtn').addEventListener('click', closeMenu);
+  $('xMenuBtn').addEventListener('click', closeMenu);
   function applySide() { document.body.classList.toggle('menu-left', Settings.side === 'left'); }
   applySide();
-  menuPanel.querySelectorAll('[data-set]').forEach(b => b.addEventListener('click', () => {
-    const k = b.dataset.set, v = b.dataset.val;
-    if (k === 'music') { Audio.init(); Audio.setMusic(v === '1'); }
-    else if (k === 'sfx') { Audio.init(); Audio.setSfx(v === '1'); }
-    else if (k === 'side') { Settings.side = v; applySide(); }
-    else if (k === 'arena') { Settings.arena = v; fit(); }
-    else if (k === 'shake') Settings.shake = v === '1';
+  menuPanel.querySelectorAll('.tile').forEach(t => t.addEventListener('click', () => {
+    const k = t.dataset.set;
+    if (k === 'music') { Audio.init(); Audio.setMusic(!Audio.musicEnabled); }
+    else if (k === 'sfx') { Audio.init(); Audio.setSfx(!Audio.sfxEnabled); }
+    else if (k === 'shake') Settings.shake = !Settings.shake;
+    else if (k === 'side') { Settings.side = Settings.side === 'left' ? 'right' : 'left'; applySide(); }
+    else if (k === 'arena') { Settings.arena = Settings.arena === 'classic' ? 'fill' : 'classic'; fit(); }
+    else if (k === 'fs') { isFS() ? exitFS() : enterFS(); }
     saveSettings(); syncMenu();
   }));
   $('resetBtn').addEventListener('click', () => {
     if (!resetArmed) { resetArmed = true; syncMenu(); return; }
     Object.assign(Stats, { tries: 0, points: 0, smashes: 0, beans: 0, broc: 0 }); saveStats();
     G.best = 0; try { localStorage.setItem('fartjack_best', '0'); } catch (e) {}
-    resetArmed = false; updateTries(); syncMenu();
+    resetArmed = false; updateTries(); fillSnack('bean', 'beans', 0); fillSnack('broc', 'broc', 0); syncMenu();
   });
   updateTries();
+
+  /* ---------- Level-up card: pauses play and says what got better ---------- */
+  const lvPanel = $('lvPanel');
+  function showLevelUp(key, L) {
+    const u = UNLOCKS[key].find(x => x[0] === L), nu = nextUnlock(key, L), name = key === 'beans' ? 'Beans' : 'Broccoli';
+    $('lvIcon').innerHTML = u ? u[1] : ICON[key];
+    $('lvTitle').textContent = name + ' Lv ' + L;
+    $('lvDesc').textContent = u ? u[2] + ': ' + u[3] : bumpText(key, L);
+    $('lvNext').textContent = nu ? 'Next unlock at Lv ' + nu[0] + ' ' + nu[1] : L >= 100 ? 'Max level reached.' : '';
+    lvOpen = true; G.paused = true; lvPanel.classList.remove('hidden');
+    Audio.levelUp();
+    $('lvBtn').focus({ preventScroll: true });
+  }
+  function closeLevelUp() {
+    if (!lvOpen) return;
+    lvOpen = false; lvPanel.classList.add('hidden');
+    if (G.state === 'play') { G.paused = false; G.countdown = 60; }
+  }
+  $('lvBtn').addEventListener('click', closeLevelUp);
+
   // Browsers need one tap or key before sound can play: the first one starts the quiet menu tune
   const wake = e => {
-    if (e.target && e.target.closest && e.target.closest('#startBtn, #againBtn, .btn, .menu')) return;
+    if (e.target && e.target.closest && e.target.closest('#startBtn, #againBtn, .btn, .menu, .levelup')) return;
     if (e.type === 'keydown' && (e.code === 'Space' || e.code === 'ArrowUp')) return;
     Audio.init();
     if (G.state === 'start') Audio.startMusic('menu');
