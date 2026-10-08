@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fart Jack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    --tile: #dff3ea;
+    --grout: #b7d9c9;
+    --ink: #2b2140;
+    --paper: #fffaf0;
+    --poop: #7a4b2a;
+    --gas: #b6e35a;
+    --pink: #ff8fab;
+    --sky: #cfefff;
+    --btn: #ffcc3d;
+    --btn-ink: #2b2140;
+    --panel: rgba(255,250,240,.94);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --tile: #1f3a33; --grout: #2d5247; --ink: #f4efe6; --paper: #2a2436;
+      --sky: #24364a; --panel: rgba(42,36,54,.94); --btn-ink: #2b2140;
+    }
+  }
+  :root[data-theme="dark"] {
+    --tile: #1f3a33; --grout: #2d5247; --ink: #f4efe6; --paper: #2a2436;
+    --sky: #24364a; --panel: rgba(42,36,54,.94); --btn-ink: #2b2140;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  body {
+    margin: 0; height: 100%;
+    background-color: var(--tile);
+    background-image:
+      linear-gradient(var(--grout) 2px, transparent 2px),
+      linear-gradient(90deg, var(--grout) 2px, transparent 2px);
+    background-size: 48px 48px;
+    color: var(--ink);
+    font-family: "Nunito", "Trebuchet MS", sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-user-select: none; user-select: none;
+  }
+  #wrap { position: relative; width: min(100vw, 100% ); height: 100%; display: flex; align-items: center; justify-content: center; }
+  canvas {
+    display: block;
+    max-width: 100%; max-height: 100%;
+    border-radius: 18px;
+    box-shadow: 0 18px 0 rgba(0,0,0,.18), 0 0 0 6px var(--paper);
+    cursor: pointer;
+  }
+  #hud {
+    position: absolute; top: 14px; right: 14px; display: flex; gap: 8px;
+  }
+  .btn {
+    font: 800 15px "Nunito", sans-serif;
+    background: var(--btn); color: var(--btn-ink);
+    border: 0; border-radius: 999px; padding: 9px 14px;
+    box-shadow: 0 4px 0 #c99a1a; cursor: pointer;
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #c99a1a; }
+  .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  #overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .panel {
+    pointer-events: auto;
+    background: var(--panel); color: var(--ink);
+    border-radius: 24px; padding: 28px 32px; text-align: center;
+    max-width: 320px; width: calc(100% - 48px);
+    box-shadow: 0 10px 0 rgba(0,0,0,.15);
+    transform: rotate(-1.5deg);
+  }
+  .panel h1 {
+    font: 400 64px/0.9 "Luckiest Guy", "Impact", sans-serif;
+    margin: 0 0 6px; letter-spacing: 1px;
+    color: var(--poop);
+    text-shadow: 4px 4px 0 var(--gas);
+  }
+  .panel h2 { font: 400 40px/1 "Luckiest Guy", "Impact", sans-serif; margin: 0 0 10px; color: var(--poop); text-shadow: 3px 3px 0 var(--gas); }
+  .panel p { margin: 8px 0 18px; font-size: 16px; line-height: 1.4; }
+  .panel .big { font: 400 48px/1 "Luckiest Guy", "Impact", sans-serif; color: var(--pink); margin: 4px 0; }
+  .hidden { display: none; }
+  @media (prefers-reduced-motion: reduce) { .panel { transform: none; } }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="420" height="640" aria-label="Fart Jack game canvas"></canvas>
+  <div id="hud">
+    <button class="btn" id="muteBtn" aria-pressed="false">Sound on</button>
+  </div>
+  <div id="overlay">
+    <div class="panel" id="startPanel">
+      <h1>Fart<br>Jack</h1>
+      <p>Jack ate the whole bean casserole. Tap, click or press space to let one rip and float past the toilet paper towers. Grab a floating bean or broccoli for a short burst of turbo gas: each flap rockets you forward and smashes through whatever you hit, but only mid-blast.</p>
+      <button class="btn" id="startBtn">Let it rip</button>
+    </div>
+    <div class="panel hidden" id="overPanel">
+      <h2>Gassed out</h2>
+      <div class="big" id="finalScore">0</div>
+      <p id="bestLine">Best: 0</p>
+      <button class="btn" id="againBtn">Try again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const W = 420, H = 640;
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const startPanel = document.getElementById('startPanel');
+  const overPanel = document.getElementById('overPanel');
+  const finalScore = document.getElementById('finalScore');
+  const bestLine = document.getElementById('bestLine');
+  const muteBtn = document.getElementById('muteBtn');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Audio (all procedural, no files) ---------- */
+  const Audio = {
+    ctx: null, master: null, muted: false, musicOn: false,
+    nextNote: 0, step: 0, timer: null,
+    init() {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = this.muted ? 0 : 0.8;
+      this.master.connect(this.ctx.destination);
+    },
+    setMuted(m) {
+      this.muted = m;
+      if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.8, this.ctx.currentTime, 0.02);
+    },
+    noiseBuffer(sec) {
+      const n = Math.floor(this.ctx.sampleRate * sec);
+      const b = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+      const d = b.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return b;
+    },
+    fart() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const len = 0.22 + Math.random() * 0.18;
+      const base = 70 + Math.random() * 50;
+      // Low flappy tone with wobble
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(base * 1.6, t);
+      osc.frequency.exponentialRampToValueAtTime(base * 0.6, t + len);
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.value = 28 + Math.random() * 20;
+      const lfoGain = this.ctx.createGain(); lfoGain.gain.value = base * 0.5;
+      lfo.connect(lfoGain).connect(osc.frequency);
+      const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(220, t + len);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      osc.connect(lp).connect(g).connect(this.master);
+      // Airy noise layer
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer(len);
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 2;
+      bp.frequency.setValueAtTime(500, t); bp.frequency.exponentialRampToValueAtTime(150, t + len);
+      const ng = this.ctx.createGain();
+      ng.gain.setValueAtTime(0.25, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      src.connect(bp).connect(ng).connect(this.master);
+      osc.start(t); lfo.start(t); src.start(t);
+      osc.stop(t + len + 0.05); lfo.stop(t + len + 0.05);
+    },
+    ding() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      [880, 1320].forEach((f, i) => {
+        const o = this.ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = f;
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t + i * 0.07);
+        g.gain.exponentialRampToValueAtTime(0.25, t + i * 0.07 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.07 + 0.18);
+        o.connect(g).connect(this.master); o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.2);
+      });
+    },
+    splat() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer(0.5);
+      const lp = this.ctx.createBiquadFilter(); lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(1800, t); lp.frequency.exponentialRampToValueAtTime(120, t + 0.5);
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0.6, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      src.connect(lp).connect(g).connect(this.master); src.start(t);
+      const o = this.ctx.createOscillator(); o.type = 'square';
+      o.frequency.setValueAtTime(330, t + 0.1); o.frequency.exponentialRampToValueAtTime(60, t + 0.9);
+      const og = this.ctx.createGain(); og.gain.setValueAtTime(0.2, t + 0.1); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      o.connect(og).connect(this.master); o.start(t + 0.1); o.stop(t + 1);
+    },
+    powerup() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      [523, 659, 784, 1047, 1319].forEach((f, i) => {
+        const o = this.ctx.createOscillator(); o.type = 'square'; o.frequency.value = f;
+        const g = this.ctx.createGain(); const st = t + i * 0.06;
+        g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.18, st + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, st + 0.22);
+        o.connect(g).connect(this.master); o.start(st); o.stop(st + 0.25);
+      });
+    },
+    crunch() {
+      if (!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource(); src.buffer = this.noiseBuffer(0.25);
+      const bp = this.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+      bp.frequency.setValueAtTime(2500, t); bp.frequency.exponentialRampToValueAtTime(300, t + 0.25);
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+      src.connect(bp).connect(g).connect(this.master); src.start(t);
+      const o = this.ctx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.2);
+      const og = this.ctx.createGain(); og.gain.setValueAtTime(0.3, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(og).connect(this.master); o.start(t); o.stop(t + 0.22);
+    },
+    // Simple bouncy chiptune loop
+    melody: [0, 4, 7, 12, 7, 4, 0, -1, 2, 5, 9, 14, 9, 5, 2, -1, 0, 4, 7, 12, 7, 4, 0, -1, -3, 0, 4, 9, 4, 0, -3, -1],
+    bass:   [0, 0, 7, 7, 0, 0, 7, 7, 2, 2, 9, 9, 2, 2, 9, 9, 0, 0, 7, 7, 0, 0, 7, 7, -3, -3, 4, 4, -3, -3, 4, 4],
+    note(semi, oct, type, start, dur, vol) {
+      const f = 261.63 * Math.pow(2, oct) * Math.pow(2, semi / 12);
+      const o = this.ctx.createOscillator(); o.type = type; o.frequency.value = f;
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      o.connect(g).connect(this.master); o.start(start); o.stop(start + dur + 0.02);
+    },
+    startMusic() {
+      if (!this.ctx || this.musicOn) return;
+      this.musicOn = true; this.step = 0; this.nextNote = this.ctx.currentTime + 0.05;
+      const stepLen = 60 / 140 / 2;
+      const schedule = () => {
+        if (!this.musicOn) return;
+        while (this.nextNote < this.ctx.currentTime + 0.25) {
+          const i = this.step % 32;
+          const m = this.melody[i];
+          if (m !== -1) this.note(m, 1, 'square', this.nextNote, stepLen * 0.8, 0.07);
+          if (i % 2 === 0) this.note(this.bass[i], -1, 'triangle', this.nextNote, stepLen * 1.6, 0.16);
+          if (i % 4 === 2) { // hat tick
+            const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuffer(0.04);
+            const hp = this.ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 6000;
+            const g = this.ctx.createGain(); g.gain.value = 0.05;
+            s.connect(hp).connect(g).connect(this.master); s.start(this.nextNote);
+          }
+          this.nextNote += stepLen; this.step++;
+        }
+        this.timer = setTimeout(schedule, 60);
+      };
+      schedule();
+    },
+    stopMusic() { this.musicOn = false; clearTimeout(this.timer); }
+  };
+
+  /* ---------- Game state ---------- */
+  const G = {
+    state: 'start', // start | play | dead
+    jack: { x: 110, y: H / 2, vy: 0, vx: 0, r: 22, rot: 0, strain: 0 },
+    gravity: 0.42, flapV: -7.6,
+    pipes: [], clouds: [], parts: [],
+    speed: 2.6, gap: 165, spawnEvery: 95, frame: 0,
+    score: 0, best: 0, shake: 0, t: 0,
+    relics: [], debris: [], power: 0, powerMax: 420, nextRelic: 300
+  };
+  try { G.best = parseInt(localStorage.getItem('fartjack_best') || '0', 10) || 0; } catch (e) { G.best = 0; }
+
+  const TYPES = ['tp', 'beans', 'plunger', 'tp'];
+
+  function reset() {
+    G.jack = { x: 110, y: H / 2, vy: 0, vx: 0, r: 22, rot: 0, strain: 0 };
+    G.pipes = []; G.parts = []; G.relics = []; G.debris = []; G.power = 0; G.nextRelic = 300; G.score = 0; G.frame = 0; G.speed = 2.6; G.gap = 165; G.shake = 0;
+    for (let i = 0; i < 6; i++) G.clouds.push({ x: Math.random() * W, y: 40 + Math.random() * 300, s: 0.6 + Math.random() * 0.8, v: 0.15 + Math.random() * 0.2 });
+    G.clouds = G.clouds.slice(-6);
+  }
+
+  function spawnPipe() {
+    const margin = 90;
+    const gapY = margin + Math.random() * (H - 110 - margin * 2 - G.gap);
+    G.pipes.push({ x: W + 40, gapY, gap: G.gap, type: TYPES[Math.floor(Math.random() * TYPES.length)], passed: false, w: 66 });
+  }
+
+  function spawnRelic() {
+    G.relics.push({
+      x: W + 30, y: 70 + Math.random() * (H - 220), type: Math.random() < 0.5 ? 'bean' : 'broccoli',
+      phase: Math.random() * Math.PI * 2, vy: (Math.random() - 0.5) * 0.6, r: 16
+    });
+    G.nextRelic = 480 + Math.floor(Math.random() * 420);
+  }
+
+  function breakPipe(p) {
+    const colors = p.type === 'tp' ? ['#fffdf7', '#d9d2c3', '#c9a070'] : p.type === 'beans' ? ['#d64545', '#ffe066', '#b5b5b5'] : ['#c98b4a', '#c93a5a', '#a06c33'];
+    const n = reduceMotion ? 10 : 26;
+    for (let i = 0; i < n; i++) {
+      G.debris.push({ x: p.x + Math.random() * p.w, y: Math.random() * (H - 110), vx: 1 + Math.random() * 5, vy: -3 + Math.random() * 6,
+        w: 8 + Math.random() * 12, h: 6 + Math.random() * 8, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3, c: colors[i % 3], life: 1 });
+    }
+    G.shake = Math.max(G.shake, reduceMotion ? 0 : 8);
+    Audio.crunch();
+    if (!p.passed) { p.passed = true; G.score++; }
+  }
+
+  function flap() {
+    if (G.state !== 'play') return;
+    G.jack.vy = G.flapV;
+    G.jack.strain = 16;
+    Audio.fart();
+    const powered = G.power > 0;
+    if (powered) { G.jack.vx = 5.5; G.jack.strain = 22; }
+    const n = (reduceMotion ? 4 : 10) * (powered ? 3 : 1);
+    for (let i = 0; i < n; i++) {
+      const k = powered ? 2.2 : 1;
+      G.parts.push({ x: G.jack.x - 18, y: G.jack.y + 10, vx: (-1.5 - Math.random() * 2) * k, vy: (Math.random() - 0.5) * 1.6 * k + 0.8,
+        r: (5 + Math.random() * 7) * (powered ? 1.6 : 1), life: 1 });
+    }
+  }
+
+  function start() {
+    Audio.init();
+    reset();
+    G.state = 'play';
+    startPanel.classList.add('hidden'); overPanel.classList.add('hidden');
+    Audio.startMusic();
+    flap();
+  }
+
+  function die() {
+    if (G.state !== 'play') return;
+    G.state = 'dead'; G.shake = reduceMotion ? 0 : 14;
+    Audio.stopMusic(); Audio.splat();
+    if (G.score > G.best) { G.best = G.score; try { localStorage.setItem('fartjack_best', String(G.best)); } catch (e) {} }
+    finalScore.textContent = G.score;
+    bestLine.textContent = 'Best: ' + G.best;
+    setTimeout(() => overPanel.classList.remove('hidden'), 650);
+  }
+
+  /* ---------- Update ---------- */
+  function update() {
+    G.t++;
+    G.clouds.forEach(c => { c.x -= c.v; if (c.x < -120) c.x = W + 120; });
+    G.parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.r += 0.25; p.life -= 0.025; });
+    G.parts = G.parts.filter(p => p.life > 0);
+    G.debris.forEach(d => { d.x += d.vx; d.y += d.vy; d.vy += 0.25; d.rot += d.vr; d.life -= 0.012; });
+    G.debris = G.debris.filter(d => d.life > 0 && d.y < H + 40);
+    if (G.shake > 0) G.shake *= 0.85;
+    if (G.jack.strain > 0) G.jack.strain--;
+    if (G.state !== 'play') {
+      if (G.state === 'dead' && G.jack.y < H - 110 - G.jack.r) { G.jack.vy += G.gravity; G.jack.y += G.jack.vy; G.jack.rot = Math.min(G.jack.rot + 0.1, 1.5); }
+      return;
+    }
+    const j = G.jack;
+    j.vy += G.gravity; j.y += j.vy;
+    j.x += j.vx; j.vx *= 0.88;
+    if (j.x > 110) j.x -= (j.x - 110) * 0.04; if (j.x < 110) j.x = 110;
+    j.rot = Math.max(-0.5, Math.min(1.2, j.vy * 0.08));
+    G.frame++;
+    if (G.frame % G.spawnEvery === 0) spawnPipe();
+    if (--G.nextRelic <= 0) spawnRelic();
+    if (G.power > 0) G.power = Math.max(0, G.power - 2.2);
+    G.relics.forEach(r => { r.x -= G.speed * 0.75; r.phase += 0.06; r.y += r.vy + Math.sin(r.phase) * 0.9; if (r.y < 40) r.vy = Math.abs(r.vy); if (r.y > H - 150) r.vy = -Math.abs(r.vy); });
+    G.relics = G.relics.filter(r => {
+      if (Math.hypot(r.x - j.x, r.y - j.y) < r.r + j.r - 4) { G.power = G.powerMax; Audio.powerup(); 
+        for (let i = 0; i < 14; i++) G.parts.push({ x: r.x, y: r.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, r: 4 + Math.random() * 6, life: 1 });
+        return false; }
+      return r.x > -40;
+    });
+    G.pipes.forEach(p => p.x -= G.speed);
+    G.pipes = G.pipes.filter(p => p.x > -100);
+    for (const p of G.pipes) {
+      if (!p.passed && p.x + p.w < j.x) {
+        p.passed = true; G.score++; Audio.ding();
+        if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+      }
+      const hitX = j.x + j.r - 4 > p.x && j.x - j.r + 4 < p.x + p.w;
+      if (hitX && (j.y - j.r + 4 < p.gapY || j.y + j.r - 4 > p.gapY + p.gap)) {
+        if (G.power > 0 && j.strain > 0) { breakPipe(p); p.dead = true; } else { die(); return; }
+      }
+    }
+    G.pipes = G.pipes.filter(p => !p.dead);
+    if (j.y + j.r > H - 110) { j.y = H - 110 - j.r; die(); }
+    if (j.y - j.r < 0) { j.y = j.r; j.vy = 0; }
+  }
+
+  /* ---------- Draw helpers ---------- */
+  function rr(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  function drawTPStack(x, yTop, yBot, fromTop) {
+    const w = 66, rollH = 34;
+    let y = fromTop ? yTop : yBot - rollH;
+    const end = fromTop ? yBot : yTop;
+    let k = 0;
+    while (fromTop ? y < end : y + rollH > end) {
+      const off = (k % 2) * 4 - 2;
+      // roll body
+      ctx.fillStyle = '#fffdf7'; rr(x + off, y, w, rollH, 10); ctx.fill();
+      ctx.strokeStyle = '#d9d2c3'; ctx.lineWidth = 2; ctx.stroke();
+      // paper lines
+      ctx.strokeStyle = '#eee7d8'; ctx.beginPath();
+      for (let i = 1; i < 4; i++) { ctx.moveTo(x + off + 6, y + i * 8); ctx.lineTo(x + off + w - 6, y + i * 8); }
+      ctx.stroke();
+      // cardboard tube hint
+      ctx.fillStyle = '#c9a070'; ctx.beginPath(); ctx.ellipse(x + off + w / 2, y + rollH / 2, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a6b45'; ctx.beginPath(); ctx.ellipse(x + off + w / 2, y + rollH / 2, 4, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      y += fromTop ? rollH : -rollH; k++;
+    }
+  }
+
+  function drawBeans(x, yTop, yBot, fromTop) {
+    const w = 66, canH = 46;
+    let y = fromTop ? yTop : yBot - canH;
+    const end = fromTop ? yBot : yTop;
+    let k = 0;
+    while (fromTop ? y < end : y + canH > end) {
+      const off = (k % 2) * 3 - 1.5;
+      ctx.fillStyle = '#d64545'; rr(x + off, y, w, canH, 6); ctx.fill();
+      ctx.fillStyle = '#ffe066'; ctx.fillRect(x + off, y + 14, w, 18);
+      ctx.fillStyle = '#2b2140'; ctx.font = '800 13px Nunito, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('BEANS', x + off + w / 2, y + 27);
+      ctx.fillStyle = '#b5b5b5'; ctx.fillRect(x + off, y, w, 5); ctx.fillRect(x + off, y + canH - 5, w, 5);
+      y += fromTop ? canH : -canH; k++;
+    }
+  }
+
+  function drawPlunger(x, yTop, yBot, fromTop) {
+    const w = 66, cx = x + w / 2;
+    const topY = fromTop ? yTop : yTop, botY = yBot;
+    // handle
+    ctx.fillStyle = '#c98b4a'; rr(cx - 9, topY, 18, botY - topY, 6); ctx.fill();
+    ctx.fillStyle = '#a06c33'; rr(cx - 9, topY, 7, botY - topY, 6); ctx.fill();
+    // rubber cup at the open end
+    const cupY = fromTop ? botY - 34 : topY;
+    ctx.fillStyle = '#c93a5a';
+    ctx.beginPath();
+    if (fromTop) { ctx.moveTo(cx - 33, botY); ctx.quadraticCurveTo(cx, botY - 70, cx + 33, botY); }
+    else { ctx.moveTo(cx - 33, topY); ctx.quadraticCurveTo(cx, topY + 70, cx + 33, topY); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#9e2a46';
+    ctx.beginPath(); ctx.ellipse(cx, fromTop ? botY : topY, 33, 7, 0, 0, Math.PI * 2); ctx.fill();
+    void cupY;
+  }
+
+  function drawPipe(p) {
+    const yTop = p.gapY, yBot = p.gapY + p.gap, floor = H - 110;
+    const fn = p.type === 'tp' ? drawTPStack : p.type === 'beans' ? drawBeans : drawPlunger;
+    fn(p.x, 0, yTop, true);
+    fn(p.x, yBot, floor, false);
+  }
+
+  function drawJack(j) {
+    ctx.save(); ctx.translate(j.x, j.y); ctx.rotate(j.rot);
+    // body (shirt)
+    ctx.fillStyle = '#4fa3e0'; ctx.beginPath(); ctx.ellipse(0, 8, 22, 18, 0, 0, Math.PI * 2); ctx.fill();
+    // legs
+    ctx.fillStyle = '#3d5a8a'; rr(-14, 18, 10, 12, 4); ctx.fill(); rr(4, 18, 10, 12, 4); ctx.fill();
+    ctx.fillStyle = '#2b2140'; rr(-16, 27, 13, 6, 3); ctx.fill(); rr(3, 27, 13, 6, 3); ctx.fill();
+    // arms out
+    ctx.strokeStyle = '#f2c9a2'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-18, 4); ctx.lineTo(-30, -8); ctx.moveTo(18, 4); ctx.lineTo(30, -8); ctx.stroke();
+    // head
+    ctx.fillStyle = '#f2c9a2'; ctx.beginPath(); ctx.arc(0, -12, 17, 0, Math.PI * 2); ctx.fill();
+    // cap
+    ctx.fillStyle = '#e8503a'; ctx.beginPath(); ctx.arc(0, -16, 17, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-4, -20, 26, 7);
+    const straining = j.strain > 0;
+    if (straining) {
+      // red, puffed face
+      ctx.fillStyle = 'rgba(230,80,70,.45)'; ctx.beginPath(); ctx.arc(2, -8, 15, 0, Math.PI * 2); ctx.fill();
+      // squeezed-shut eyes
+      ctx.strokeStyle = '#2b2140'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.beginPath();
+      ctx.moveTo(0, -14); ctx.lineTo(7, -11); ctx.lineTo(0, -8);
+      ctx.moveTo(16, -14); ctx.lineTo(10, -11); ctx.lineTo(16, -8);
+      ctx.stroke();
+      // furrowed brows
+      ctx.beginPath(); ctx.moveTo(-1, -20); ctx.lineTo(8, -17); ctx.moveTo(17, -20); ctx.lineTo(9, -17); ctx.stroke();
+      // gritted teeth
+      ctx.fillStyle = '#fff'; rr(2, -5, 13, 6, 2); ctx.fill();
+      ctx.strokeStyle = '#2b2140'; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(2, -2); ctx.lineTo(15, -2);
+      for (let tx = 5; tx < 15; tx += 3) { ctx.moveTo(tx, -5); ctx.lineTo(tx, 1); }
+      ctx.stroke();
+      rr(2, -5, 13, 6, 2); ctx.stroke();
+      // sweat drop
+      ctx.fillStyle = '#8fd3ff'; ctx.beginPath(); ctx.moveTo(-14, -16); ctx.quadraticCurveTo(-18, -8, -14, -8); ctx.quadraticCurveTo(-10, -8, -14, -16); ctx.fill();
+    } else {
+      // eyes
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, -12, 6, 0, Math.PI * 2); ctx.arc(12, -12, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2b2140'; ctx.beginPath(); ctx.arc(6, -12, 2.5, 0, Math.PI * 2); ctx.arc(13, -12, 2.2, 0, Math.PI * 2); ctx.fill();
+      // grin
+      ctx.strokeStyle = '#2b2140'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(8, -6, 6, 0.2, Math.PI - 0.2); ctx.stroke();
+    }
+    // blush
+    ctx.fillStyle = 'rgba(255,120,140,.5)'; ctx.beginPath(); ctx.arc(14, -4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBackground() {
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--sky').trim() || '#cfefff';
+    ctx.fillRect(0, 0, W, H);
+    // clouds
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    G.clouds.forEach(c => {
+      ctx.save(); ctx.translate(c.x, c.y); ctx.scale(c.s, c.s);
+      ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.arc(24, -8, 26, 0, Math.PI * 2); ctx.arc(50, 0, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    });
+    // bathroom floor: tiles
+    const floor = H - 110;
+    ctx.fillStyle = '#dff3ea'; ctx.fillRect(0, floor, W, 110);
+    ctx.strokeStyle = '#b7d9c9'; ctx.lineWidth = 2;
+    const off = (G.state === 'play' ? (G.frame * G.speed) : 0) % 40;
+    ctx.beginPath();
+    for (let x = -off; x < W + 40; x += 40) { ctx.moveTo(x, floor); ctx.lineTo(x, H); }
+    for (let y = floor; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    ctx.fillStyle = '#9ccbb6'; ctx.fillRect(0, floor, W, 6);
+  }
+
+  function drawRelics() {
+    G.relics.forEach(r => {
+      ctx.save(); ctx.translate(r.x, r.y);
+      const bob = Math.sin(r.phase * 2) * 0.12;
+      ctx.rotate(bob);
+      // glow
+      ctx.fillStyle = 'rgba(255,230,120,.35)'; ctx.beginPath(); ctx.arc(0, 0, r.r + 8 + Math.sin(r.phase * 3) * 3, 0, Math.PI * 2); ctx.fill();
+      if (r.type === 'bean') {
+        ctx.fillStyle = '#a0522d'; ctx.beginPath();
+        ctx.moveTo(-12, -4); ctx.bezierCurveTo(-16, 10, 8, 16, 14, 4); ctx.bezierCurveTo(18, -8, 2, -16, -4, -10); ctx.bezierCurveTo(-8, -6, -2, -2, -12, -4); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.beginPath(); ctx.ellipse(-4, -5, 5, 2.5, -0.5, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = '#9ccf6a'; rr(-4, 0, 8, 16, 3); ctx.fill();
+        ctx.fillStyle = '#3f8f3a';
+        [[-9, -4, 8], [0, -10, 9], [9, -4, 8], [-3, 0, 6], [5, 0, 6]].forEach(([x, y, rad]) => { ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill(); });
+        ctx.fillStyle = '#5fb04f';
+        [[-8, -6, 3], [2, -12, 3], [10, -6, 3]].forEach(([x, y, rad]) => { ctx.beginPath(); ctx.arc(x, y, rad, 0, Math.PI * 2); ctx.fill(); });
+      }
+      ctx.restore();
+    });
+  }
+
+  function drawDebris() {
+    G.debris.forEach(d => {
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot); ctx.globalAlpha = Math.min(1, d.life * 2);
+      ctx.fillStyle = d.c; ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
+      ctx.restore();
+    });
+  }
+
+  function drawAura(j) {
+    if (G.power <= 0) return;
+    const flapping = j.strain > 0;
+    let fade = flapping ? 0.55 : 0.14;
+    if (G.power < 90 && Math.floor(G.power / 8) % 2 === 0) fade *= 0.4;
+    const pulse = 8 + Math.sin(G.t * 0.3) * 4;
+    ctx.fillStyle = `rgba(182,227,90,${fade})`; ctx.beginPath(); ctx.arc(j.x, j.y, j.r + 14 + pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = `rgba(120,200,40,${flapping ? 0.95 : 0.3})`; ctx.lineWidth = flapping ? 5 : 2; ctx.setLineDash([8, 6]); ctx.lineDashOffset = -G.t * 2;
+    ctx.beginPath(); ctx.arc(j.x, j.y, j.r + 10 + pulse, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  function drawPowerBar() {
+    if (G.power <= 0 || G.state === 'start') return;
+    const w = 180, x = (W - w) / 2, y = 96;
+    ctx.fillStyle = 'rgba(43,33,64,.55)'; rr(x - 3, y - 3, w + 6, 16, 8); ctx.fill();
+    ctx.fillStyle = '#b6e35a'; rr(x, y, w * (G.power / G.powerMax), 10, 5); ctx.fill();
+    ctx.font = '800 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff';
+    ctx.fillText('Gas power', W / 2, y - 7);
+  }
+
+  function drawParts() {
+    G.parts.forEach(p => {
+      ctx.fillStyle = `rgba(182,227,90,${p.life * 0.6})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+
+  function drawScore() {
+    if (G.state === 'start') return;
+    ctx.font = '400 56px "Luckiest Guy", Impact, sans-serif'; ctx.textAlign = 'center';
+    ctx.lineWidth = 8; ctx.strokeStyle = '#7a4b2a'; ctx.strokeText(G.score, W / 2, 78);
+    ctx.fillStyle = '#fff'; ctx.fillText(G.score, W / 2, 78);
+  }
+
+  function draw() {
+    ctx.save();
+    if (G.shake > 0.5) ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake);
+    drawBackground();
+    G.pipes.forEach(drawPipe);
+    drawRelics();
+    drawDebris();
+    drawParts();
+    drawAura(G.jack);
+    drawJack(G.jack);
+    drawPowerBar();
+    drawScore();
+    ctx.restore();
+  }
+
+  let last = 0, acc = 0;
+  function loop(ts) {
+    const dt = Math.min(ts - last, 50); last = ts; acc += dt;
+    while (acc >= 1000 / 60) { update(); acc -= 1000 / 60; }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- Input ---------- */
+  function press(e) {
+    if (e && e.target && e.target.closest && e.target.closest('.btn')) return;
+    if (G.state === 'play') { flap(); }
+  }
+  cv.addEventListener('pointerdown', e => { e.preventDefault(); press(e); });
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      if (G.state === 'play') flap();
+      else if (G.state === 'start') start();
+      else if (G.state === 'dead' && !overPanel.classList.contains('hidden')) start();
+    }
+  });
+  document.getElementById('startBtn').addEventListener('click', start);
+  document.getElementById('againBtn').addEventListener('click', start);
+  muteBtn.addEventListener('click', () => {
+    Audio.init();
+    const m = !Audio.muted; Audio.setMuted(m);
+    muteBtn.textContent = m ? 'Sound off' : 'Sound on';
+    muteBtn.setAttribute('aria-pressed', String(m));
+  });
+
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
