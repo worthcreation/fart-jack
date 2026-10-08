@@ -216,44 +216,24 @@
         } catch (e) {}
       }));
     },
-    // Plays a recorded fart with a random variation: pitch, length, loudness and tone all change each time.
-    pickSample(powered, avoid) {
-      let pool = powered ? this.buffers.filter(x => x.kind === 'rip') : this.buffers;
-      if (!pool.length) pool = this.buffers;
-      let pick = pool[Math.floor(Math.random() * pool.length)];
-      if ((pick === avoid || pick === this.lastSample) && pool.length > 1) pick = pool[(pool.indexOf(pick) + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length];
-      return pick;
-    },
     shaper() {
       if (this._shaper) return this._shaper;
       const n = 1024, c = new Float32Array(n), k = 6;
       for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(k * x) / Math.tanh(k); }
       return (this._shaper = c);
     },
-    // Builds one random tone color and returns its input and output nodes
-    tone(t, len) {
+    // Tone color. Subtle farts are natural or a little muffled. Only big ones get rasp.
+    tone(big) {
       const c = this.ctx, r = Math.random();
-      if (r < 0.3) return null; // natural
-      if (r < 0.5) { // muffled, like under the covers
-        const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 350 + Math.random() * 500; f.Q.value = 1.2; return [f, f];
-      }
-      if (r < 0.63) { // thin and squeaky
-        const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 220 + Math.random() * 280; return [f, f];
-      }
-      if (r < 0.76) { // nasal, honky
-        const f = c.createBiquadFilter(); f.type = 'peaking'; f.frequency.value = 600 + Math.random() * 900; f.Q.value = 2.5; f.gain.value = 9; return [f, f];
-      }
-      if (r < 0.88) { // raspy
+      if (big && r < 0.35) {
         const ws = c.createWaveShaper(); ws.curve = this.shaper(); ws.oversample = '2x';
-        const pre = c.createGain(); pre.gain.value = 1.6; const post = c.createGain(); post.gain.value = 0.55;
+        const pre = c.createGain(); pre.gain.value = 1.4; const post = c.createGain(); post.gain.value = 0.6;
         pre.connect(ws).connect(post); return [pre, post];
       }
-      // extra flappy: fast on/off flutter on top
-      const trem = c.createGain(); trem.gain.value = 0.55;
-      const lfo = c.createOscillator(); lfo.type = 'square'; lfo.frequency.value = 14 + Math.random() * 16;
-      const depth = c.createGain(); depth.gain.value = 0.45;
-      lfo.connect(depth).connect(trem.gain); lfo.start(t); lfo.stop(t + len + 0.1);
-      return [trem, trem];
+      if (!big && r < 0.45) {
+        const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500 + Math.random() * 700; f.Q.value = 0.7; return [f, f];
+      }
+      return null;
     },
     playOne(pick, t, rate, frac, vol, dest) {
       const c = this.ctx, dur = pick.buf.duration * frac, real = dur / rate;
@@ -265,30 +245,37 @@
       src.start(t, 0, dur);
       return real;
     },
+    // Mostly soft, short-ish toots. Every so often a big obnoxious one.
     playSample(powered) {
       const c = this.ctx, t = c.currentTime;
-      const pick = this.pickSample(powered);
+      const sinceBig = t - (this.lastBig || -99), sinceLast = t - (this.lastFartAt || -99);
+      this.lastFartAt = t;
+      const big = sinceBig > 4 && Math.random() < (powered ? 0.3 : 0.1);
+      if (big) this.lastBig = t;
+      // squeaky whines only show up rarely
+      let pool = this.buffers.filter(x => x.kind !== 'whine');
+      if (powered || big) pool = this.buffers.filter(x => x.kind === 'rip');
+      else if (Math.random() < 0.06) pool = this.buffers.filter(x => x.kind === 'whine');
+      if (!pool.length) pool = this.buffers;
+      let pick = pool[Math.floor(Math.random() * pool.length)];
+      if (pick === this.lastSample && pool.length > 1) pick = pool[(pool.indexOf(pick) + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length];
       this.lastSample = pick;
-      // pitch and speed: log-spread so deep and squeaky both show up
-      const rate = powered ? 0.65 + Math.random() * 0.25 : Math.exp(Math.log(0.62) + Math.random() * (Math.log(1.55) - Math.log(0.62)));
-      // loudness: from a polite little one to a full blast
-      const vol = powered ? 0.75 + Math.random() * 0.2 : 0.18 + Math.pow(Math.random(), 0.7) * 0.72;
-      // length: mostly full, sometimes clipped short, sometimes a long two-parter
-      const lr = Math.random();
-      const mode = powered ? (lr < 0.5 ? 'long' : 'full') : (lr < 0.22 ? 'short' : lr < 0.42 ? 'long' : 'full');
-      const out = c.createGain(); out.gain.value = 1;
-      const estLen = (pick.buf.duration / rate) * (mode === 'long' ? 2 : 1);
-      const tn = this.tone(t, estLen);
+      // pitch stays near natural, leaning lower; big ones go deep
+      const rate = big ? 0.68 + Math.random() * 0.2 : powered ? 0.82 + Math.random() * 0.15 : 0.82 + Math.random() * 0.26;
+      let vol = big ? 0.8 + Math.random() * 0.15 : powered ? 0.42 + Math.random() * 0.15 : 0.16 + Math.random() * 0.2;
+      if (!big && sinceLast < 0.25) vol *= 0.55; // rapid tapping gets softer
+      const out = c.createGain();
+      const tn = this.tone(big);
       if (tn) { out.connect(tn[0]); tn[1].connect(this.master); } else out.connect(this.master);
-      if (mode === 'short') {
-        this.playOne(pick, t, rate, 0.3 + Math.random() * 0.3, vol, out);
-      } else if (mode === 'long') {
+      if (big) {
         const first = this.playOne(pick, t, rate, 1, vol, out);
-        const next = Math.random() < 0.5 ? pick : this.pickSample(powered, pick);
-        const rate2 = rate * (0.8 + Math.random() * 0.3);
-        this.playOne(next, t + first * (0.7 + Math.random() * 0.2), rate2, 1, vol * (0.7 + Math.random() * 0.4), out);
+        if (Math.random() < 0.6) {
+          const next = pool.length > 1 ? pool[(pool.indexOf(pick) + 1) % pool.length] : pick;
+          this.playOne(next, t + first * 0.8, rate * (0.85 + Math.random() * 0.15), 1, vol * 0.8, out);
+        }
       } else {
-        this.playOne(pick, t, rate, 1, vol, out);
+        // subtle ones are often clipped short
+        this.playOne(pick, t, rate, Math.random() < 0.55 ? 0.35 + Math.random() * 0.35 : 1, vol, out);
       }
     },
     setMuted(m) {
