@@ -311,6 +311,12 @@
     G.clouds = G.clouds.slice(-6);
   }
 
+  // Single place where points are awarded, so passing and smashing both count toward the speed-up
+  function addPoint() {
+    G.score++;
+    if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+  }
+
   function spawnPipe() {
     const margin = 90;
     const gapY = margin + Math.random() * (H - 110 - margin * 2 - G.gap);
@@ -334,7 +340,7 @@
     }
     G.shake = Math.max(G.shake, reduceMotion ? 0 : 8);
     Audio.crunch();
-    if (!p.passed) { p.passed = true; G.score++; }
+    if (!p.passed) { p.passed = true; addPoint(); }
   }
 
   function flap() {
@@ -405,8 +411,7 @@
     G.pipes = G.pipes.filter(p => p.x > -100);
     for (const p of G.pipes) {
       if (!p.passed && p.x + p.w < j.x) {
-        p.passed = true; G.score++; Audio.ding();
-        if (G.score % 5 === 0) { G.speed = Math.min(G.speed + 0.25, 4.6); G.gap = Math.max(G.gap - 5, 130); }
+        p.passed = true; addPoint(); Audio.ding();
       }
       const hitX = j.x + j.r - 4 > p.x && j.x - j.r + 4 < p.x + p.w;
       if (hitX && (j.y - j.r + 4 < p.gapY || j.y + j.r - 4 > p.gapY + p.gap)) {
